@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+	<script src="scripts/jquery.js"></script>
+	<script src="scripts/json2.js"></script>
+	
+	<script src="scripts/client.js"></script>
+	
+	<link href='style/main.css' type='text/css' rel='stylesheet'>
+	
+	<script>
+	
+		$(document).ready(documentReady);
+	
+	</script>
+	
+</head>
+<body>
+
+	<div id="lobby">
+	
+		<h2>Players:</h2>
+	
+		<ul id="users">
+			<li id="userTemplate" class="template">
+				<span class="name"></span>
+				<span class="readyState">
+					<span class="ready">
+						Ready!
+					</span>
+					<span class="notReady">
+						Not Ready!
+					</span>
+				</span>
+			</li>
+		</ul>
+		
+		<div id="actions">
+			<a class="ready" href="#">Play game!</a>
+			<a class="notReady" href="#">Hang on - I'm not ready!</a>
+		</div>
+	
+	</div>
+
+	<div id="game">
+	
+		<div id="tilePicker">
+			<a class="consonant" href="#">Consonant</a>
+			<a class="vowel" href="#">Vowel</a>
+		</div>
+
+		<div id="clock">30</div>
+		<div id="input">
+			<ul class="tiles">
+				<li class="template" id="tileTemplate"><a href="#"></a></li>
+			</ul>
+		</div>
+		<div id="output">
+			<ul class="tiles"></ul>
+		</div>
+		<div id="controls">
+			<a id="submit" href="#">That's my word!</a>
+		</div>
+	</div>
+</body>
+</html>

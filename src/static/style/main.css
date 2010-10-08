@@ -1,0 +1,95 @@
+
+ul, li{ margin:0;padding:0}
+
+body{
+	font-family: 	Arial, Helvetica, sans-serif;
+	text-align:		center;
+	background:		#060;
+	padding:		40px;
+}
+
+#game{
+	display:		none;
+}
+
+#lobby .readyState .ready{
+	display:		none;
+}
+
+#users{
+	margin:			0 0 20px 0;
+}
+
+.template{
+	display:		none !important;
+}
+
+#actions a{
+	display:		inline-block;
+	width:			200px;
+	border-radius:	5px;
+	background:		#494;
+	padding:		3px 6px;
+}
+
+#actions .notReady{
+	display:		none;
+}
+
+#clock{
+	display:		inline-block;
+	font-size:		50px;
+	background:		#4A4;
+	color:			#070;
+	border-radius:	100px;
+	width:			80px;
+	height:			80px;
+	line-height:	80px;
+	margin:			0 0 50px 0;
+}
+
+#input{
+	margin:			0 auto 50px auto;
+	width:			600px;
+	background:		#171;
+	border-radius:	20px;
+	padding:		10px 20px 20px 20px;
+	text-align:		left;
+}
+
+#output{
+	margin:			0 auto 50px auto;
+	width:			600px;
+	background:		#050;
+	border-radius:	20px;
+	padding:		10px 20px 20px 20px;
+	min-height:		60px;
+	text-align:		left;
+}
+
+.tiles li{
+	display:		inline-block;
+	margin:			0 4px;
+	border-radius:	5px;
+}
+
+.tiles li:hover{
+	-webkit-box-shadow:	0 0 10px #FFF;
+}
+
+.tiles li a{
+	display:		inline-block;
+	font-size:		50px;
+	width:			60px;
+	height:			60px;
+	text-align:		center;
+	line-height:	60px;
+	background:		#FFD;
+	border-radius:	5px;
+	text-decoration:none;
+	color:			#444;
+	text-shadow:	0 -1px 0 #000;
+	font-weight:	bold;
+	-webkit-box-shadow:		0 5px 0 #CCC;
+	border:			1px solid #FFF;
+}
