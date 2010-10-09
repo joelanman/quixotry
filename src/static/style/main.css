@@ -12,6 +12,10 @@ body{
 	display:		none;
 }
 
+#tilePicker{
+	display:		none;
+}
+
 #lobby .readyState .ready{
 	display:		none;
 }
@@ -37,7 +41,7 @@ body{
 }
 
 #clock{
-	display:		inline-block;
+	display:		none;
 	font-size:		50px;
 	background:		#4A4;
 	color:			#070;

@@ -19,7 +19,8 @@ var userManager = {
 User = function(userId){
 	this.userId = userId;
 	this._isReady = false;
-	this._room = null;
+	this._roomId = null;
+	this._isDealer = false;
 };
 
 User.prototype.ready = function(isReady){
@@ -33,15 +34,27 @@ User.prototype.ready = function(isReady){
 	
 }
 
-User.prototype.room = function(room){
+User.prototype.room = function(roomId){
 
-	if (room == null)
-		return this._room;
+	if (roomId == null) {
+		var room = roomManager.get(this._roomId);
+		return room;
+	}
 		
-	this._room = room;
+	this._roomId = roomId;
 	
-	room.addUser(this);
+	var room = roomManager.get(roomId).addUser(this);
 	
+	return this;
+}
+
+User.prototype.dealer = function(isDealer){
+
+	if (isDealer == null)
+		return this._isDealer;
+		
+	this._isDealer = isDealer;
+		
 	return this;
 }
 
@@ -79,7 +92,7 @@ Room = function(id){
 
 Room.prototype.addUser = function(user){
 	
-	this.users[user.userId] = 1;
+	this.users[user.userId] = user;
 	
 	return this;
 }
@@ -123,7 +136,7 @@ roomManager.removeRoom = function(roomId){
 };
 
 roomManager.get = function(roomId){
-	if (typeof(this.rooms[roomId]) == "undefined")
+	if (!this.rooms[roomId])
 		throw("room not found");
 	return this.rooms[roomId];
 };
@@ -158,24 +171,21 @@ var httpServer = http.createServer(function(request, response) {
 
 
 var server = ws.createServer({
-  server: 	httpServer,
-  debug: 	true
+	server: httpServer,
+	debug: 	true
 });
 
-server.addListener("listeninghttp://cards.pronked.com/Game.aspx/Details/66dbba84-d495-4834-98ec-e3ce83ce0d03", function(){
+server.addListener("listening", function(){
   sys.log("Listening for connections.");
 });
 
-startGame = function(){
-	sys.log("starting game");
-	server.broadcast(JSON.stringify({
-		"action": "state",
-		"state": "game"
-	}));
-}
+
+var connections = {};
 
 // Handle WebSocket Requests
 server.addListener("connection", function(conn){
+
+	connections[conn.id] = conn;
 
 	var actions = {
 		"submit" : function(message){
@@ -185,22 +195,27 @@ server.addListener("connection", function(conn){
 	  		
 	  		sys.log("Valid: " + validWord);
 	  		
-			server.broadcast(conn.storage.get("username")+": "+validWord);
+			server.broadcast(conn.storage.get("username") + ": "+validWord);
 		},
+		
 		"joinRoom" : function(message){
 			sys.log("Joining: " + message.roomId);
+			
+			var user = userManager.get(conn.id);
 			
 			try {
 				var room = roomManager.get(message.roomId);
 			} catch (err) {
 				var room = roomManager.addRoom(message.roomId);
+				user.dealer(true);
 			}				
 						
-			userManager.get(conn.id).room(room);
+			user.room(room.id);
 			
 			conn.send(JSON.stringify({"action":"initRoom", "room": room}));
 			conn.broadcast(JSON.stringify({"action":"joinRoom","userId":conn.id}));
 		},
+		
 		"userReady" : function(message){
 			sys.log("User ready: " + conn.id);
 			var user = userManager.get(conn.id)
@@ -215,6 +230,20 @@ server.addListener("connection", function(conn){
 						"state": "allReady"
 					}));
 					
+					var startGame = function(){
+						sys.log("starting game");
+						conn.send(JSON.stringify({
+							"action": 	"state",
+							"state": 	"game",
+							"dealer":	true
+						}));
+						conn.broadcast(JSON.stringify({
+							"action": 	"state",
+							"state": 	"game",
+							"dealer":	false
+						}));
+					}
+
 					startGameTimeout = setTimeout(startGame, 5000);
 				}
 			} else {
@@ -223,7 +252,12 @@ server.addListener("connection", function(conn){
 				} catch(err){}
 			}
 			
-		}
+		},
+		"addTile" : function(message){
+			sys.log("Add tile: " + message.letter);
+			
+			conn.broadcast(JSON.stringify({"action":"addTile","letter":message.letter}));
+		},
 	}
 	
 	userManager.addUser(conn.id);
@@ -246,10 +280,13 @@ server.addListener("connection", function(conn){
 });
 
 server.addListener("close", function(conn){
-  server.broadcast(JSON.stringify({"action":"closed","userId":conn.id}));
+	
+  	server.broadcast(JSON.stringify({"action":"closed","userId":conn.id}));
   
-  userManager.removeUser(conn.id);
-  
+  	userManager.removeUser(conn.id);
+
+	delete connections[conn.id];
+	
 });
 
 server.listen(8008);

@@ -1,3 +1,5 @@
+var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
+
 var state = "",
 	vowels = "AEIOU",
 	consonants = "BCDFGHJKLMNPQRSTVWXYZ";
@@ -49,45 +51,74 @@ return this.users[userId];
 };
 
 actions = {
-"initRoom" : function(message){
-	log("initialising room...");
-	if(message.room.state == "lobby"){
-		var users = message.room.users;
-		for (userId in users)
-			userManager.addUser(userId);
+	"initRoom" : function(message){
+		log("initialising room...");
+		if(message.room.state == "lobby"){
+			var users = message.room.users;
+			for (userId in users)
+				userManager.addUser(userId);
+		}
+	},
+	"joinRoom" : function(message){
+		log("User joined room");
+		userManager.addUser(message.userId);
+	},
+	"closed" : function(message){
+		log("User left room");
+		userManager.removeUser(message.userId);
+	},
+	"userReady" : function(message){
+		log("User ready");
+		userManager.get(message.userId).ready(message.isReady);
+	},
+	"yourId" : function(message){
+		log("Got Id");
+		selfId = message.userId;
+	},
+	"state" : function(message){
+		log("Game state: " + message.state);
+		state = message.state;
+		if (state == "lobby"){
+			$('#lobby').show();
+			$('#game').hide();
+		} else if (state == "game"){
+			$('#lobby').hide();
+			$('#game').show();
+			
+			if(message.dealer)
+				$('#tilePicker').show();
+			
+		}
+	},
+	"addTile" : function(message){
+		log("Add tile: " + message.letter);
+		addTile(message.letter);
 	}
-},
-"joinRoom" : function(message){
-	log("User joined room");
-	userManager.addUser(message.userId);
-},
-"closed" : function(message){
-	log("User left room");
-	userManager.removeUser(message.userId);
-},
-"userReady" : function(message){
-	log("User ready");
-	userManager.get(message.userId).ready(message.isReady);
-},
-"yourId" : function(message){
-	log("Got Id");
-	selfId = message.userId;
-},
-"state" : function(message){
-	log("Game state: " + message.state);
-	state = message.state;
-	if (state == "lobby"){
-		$('#lobby').show();
-		$('#game').hide();
-	} else if (state == "game"){
-		$('#lobby').hide();
-		$('#game').show();
-		
-		clockInterval = setInterval("incrementClock()",1000);
-	}
-}
 }
 
+	
+var addTile = function(letter){
+	
+	var $newTile = $tile.clone();
+	$newTile.find('a').text(letter);
+	$newTile.appendTo('#input .tiles');
+}
+
+var pickTile = function(type){
+	var letters = (type == "vowel") ? vowels : consonants;
+	var index = Math.floor(Math.random()*letters.length)
+	var letter = letters.substring(index,index+1);
+	addTile(letter)
+	
+	conn.send(JSON.stringify({'action':'addTile','letter':letter}));
+		
+	if ($('#input .tiles li').length == 8) {
+		conn.send(JSON.stringify({'action':'tileSelectionComplete'}));
+		$('#clock').show();
+		clockInterval = setInterval("incrementClock()", 1000);
+	}
+}
+	
 incrementClock = function(){
 	$('#clock').text(parseInt($('#clock').text()) -1); 
 	if ($('#clock').text() == "0"){
@@ -104,7 +135,7 @@ var conn, recvd, connections = 0;
 if (window["WebSocket"]) {
 	recvd = 0;
 
-	conn = new WebSocket("ws://0.0.0.0:8008/");//"ws://192.168.1.78:8008/");
+	conn = new WebSocket(wsAddress);
 
 	conn.onmessage = function(evt) {
 		log("Received: " +evt.data);
@@ -127,6 +158,8 @@ if (window["WebSocket"]) {
 }
 
 documentReady = function(){
+	
+	$tile = $('#tileTemplate').remove().removeAttr('id').removeClass('template').show();
 
 	userManager.$userTemplate = $('#userTemplate').clone().removeAttr('id').removeClass('template').show();
 
@@ -146,23 +179,13 @@ documentReady = function(){
 		var destination = ($(this).closest('#input').length) ? '#output' : '#input';
 		$(this).closest('li').appendTo(destination + ' .tiles');
 	});
-	
-	$('#tilePicker .vowel').click(function(e){
 		
-		var index = Math.floor(Math.random()*vowels.length)
-		var letter = vowels.substring(index,index+1);
-		var $newTile = $('#tileTemplate').clone().removeAttr('id').removeClass('template').show();
-		$newTile.find('a').text(letter);
-		$newTile.appendTo('#input .tiles');
+	$('#tilePicker .vowel').click(function(e){
+		pickTile('vowel');
 	});
 	
 	$('#tilePicker .consonant').click(function(e){
-		
-		var index = Math.floor(Math.random()*consonants.length)
-		var letter = consonants.substring(index,index+1);
-		var $newTile = $('#tileTemplate').clone().removeAttr('id').removeClass('template').show();
-		$newTile.find('a').text(letter);
-		$newTile.appendTo('#input .tiles');
+		pickTile('consonant');
 	});
 	
 	$('#submit').click(function(e){
