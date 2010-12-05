@@ -5,49 +5,49 @@ var state = "",
 	consonants = "BCDFGHJKLMNPQRSTVWXYZ";
 
 var userManager = {
-users: {}
+	users: {}
 };
 
 User = function(userId){
-this.isReady = false;
-
-this.$el = userManager.$userTemplate.clone();
-this.$el.attr('id','user_'+ userId);
-this.$el.find('.name').text(userId);
-this.$el.appendTo($('#users'));
+	this.isReady = false;
+	
+	this.$el = userManager.$userTemplate.clone();
+	this.$el.attr('id','user_'+ userId);
+	this.$el.find('.name').text(userId);
+	this.$el.appendTo($('#users'));
 
 };
 
 User.prototype.ready = function(isReady){
-
-if (isReady == null)
-	return this.isReady;
 	
-this.isReady = isReady;
-
-this.$el.find('.ready').toggle(this.isReady);
-this.$el.find('.notReady').toggle(this.isReady == false);
+	if (isReady == null)
+		return this.isReady;
+		
+	this.isReady = isReady;
+	
+	this.$el.find('.ready').toggle(this.isReady);
+	this.$el.find('.notReady').toggle(this.isReady == false);
 
 }
 
 userManager.addUser = function(userId){
 
-log("Adding user: " + userId);
-
-this.users[userId] = new User(userId);
+	log("Adding user: " + userId);
+	
+	this.users[userId] = new User(userId);
 };
 
 userManager.removeUser = function(userId){
-
-log("Removing user: " + userId);
-
-$('#user_'+ userId).fadeOut();
-
-delete this.users[userId];
+	
+	log("Removing user: " + userId);
+	
+	$('#user_'+ userId).fadeOut();
+	
+	delete this.users[userId];
 };
 
 userManager.get = function(userId){
-return this.users[userId];
+	return this.users[userId];
 };
 
 actions = {
@@ -73,7 +73,7 @@ actions = {
 	},
 	"yourId" : function(message){
 		log("Got Id");
-		selfId = message.userId;
+		window.localStorage.setItem('userId', message.userId);
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);
@@ -170,7 +170,7 @@ documentReady = function(){
 	  	
 	  	userManager.get(selfId).ready(isReady);
 	  	
-	  	conn.send(JSON.stringify({'action':'userReady', 'isReady': isReady}));
+	  	conn.send(JSON.stringify({'action':'userReady', 'isReady': isReady, 'userId':selfId}));
 	  	$('#actions a').toggle();
 	});
 
@@ -215,6 +215,11 @@ documentReady = function(){
 
 	conn.onopen = function() {
 		log("opened");
-		conn.send(JSON.stringify({"action":"joinRoom", "roomId" : hashOptions.room}));
+		
+		var userId = window.localStorage.getItem('userId');
+		
+		conn.send(JSON.stringify({"action":"joinRoom",
+								  "roomId" : hashOptions.room,
+								  "userId" : userId}));
 	};
 }

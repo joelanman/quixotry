@@ -3,7 +3,9 @@ var sys = require("sys")
   , url = require("url")
   , fs = require("fs")
   , path = require("path")
-  , ws = require('./lib/ws');
+  , ws = require('./lib/ws'),
+  crypto = require('crypto');
+  
 
 fs.readFile('wordlist.csv', 'utf8', function (err, data) {
   if (err) throw err;
@@ -63,6 +65,8 @@ userManager.addUser = function(userId){
 	sys.log("Adding user: " + userId);
 	
 	this.users[userId] = new User(userId);
+	
+	return this.users[userId];
 };
 
 userManager.removeUser = function(userId){
@@ -78,6 +82,10 @@ userManager.removeUser = function(userId){
 
 userManager.get = function(userId){
 	sys.log("getting user " + userId) + ": " + this.users[userId];
+	
+	if (!this.users[userId])
+		throw("user not found");
+		
 	return this.users[userId];
 };
 
@@ -185,8 +193,6 @@ var connections = {};
 // Handle WebSocket Requests
 server.addListener("connection", function(conn){
 
-	connections[conn.id] = conn;
-
 	var actions = {
 		"submit" : function(message){
 			sys.log("Checking: " + message.word);
@@ -201,7 +207,19 @@ server.addListener("connection", function(conn){
 		"joinRoom" : function(message){
 			sys.log("Joining: " + message.roomId);
 			
-			var user = userManager.get(conn.id);
+			try{
+				
+				var user = userManager.get(message.userId);
+				
+			} catch(err) {
+				
+				var identifier = new Date().toString() + conn.id;
+				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
+				var user = userManager.addUser(userId);
+				
+				conn.send(JSON.stringify({"action":"yourId", "userId":userId}));
+			}
+			connections[conn.id] = {'userId': user.userId};
 			
 			try {
 				var room = roomManager.get(message.roomId);
@@ -213,14 +231,14 @@ server.addListener("connection", function(conn){
 			user.room(room.id);
 			
 			conn.send(JSON.stringify({"action":"initRoom", "room": room}));
-			conn.broadcast(JSON.stringify({"action":"joinRoom","userId":conn.id}));
+			conn.broadcast(JSON.stringify({"action":"joinRoom","userId":user.userId}));
 		},
 		
 		"userReady" : function(message){
-			sys.log("User ready: " + conn.id);
-			var user = userManager.get(conn.id)
+			sys.log("User ready: " + message.userId);
+			var user = userManager.get(message.userId)
 			user.ready(message.isReady);
-			conn.broadcast(JSON.stringify({"action":"userReady","userId":conn.id, "isReady":message.isReady}));
+			conn.broadcast(JSON.stringify({"action":"userReady","userId":message.userId, "isReady":message.isReady}));
 			
 			if (message.isReady){
 				if (user.room().allReady()) {
@@ -259,10 +277,6 @@ server.addListener("connection", function(conn){
 			conn.broadcast(JSON.stringify({"action":"addTile","letter":message.letter}));
 		},
 	}
-	
-	userManager.addUser(conn.id);
-	
-	conn.send(JSON.stringify({"action":"yourId", "userId":conn.id}));
 
 	conn.addListener("message", function(message){
 	
@@ -281,9 +295,11 @@ server.addListener("connection", function(conn){
 
 server.addListener("close", function(conn){
 	
-  	server.broadcast(JSON.stringify({"action":"closed","userId":conn.id}));
+	var userId = connections[conn.id].userId;
+	
+  	server.broadcast(JSON.stringify({"action":"closed","userId":userId}));
   
-  	userManager.removeUser(conn.id);
+  	//userManager.removeUser(userId);
 
 	delete connections[conn.id];
 	
