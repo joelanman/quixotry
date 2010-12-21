@@ -52,7 +52,8 @@ userManager.addUser = function(user){
 
 	log("Adding user: " + user.userId);
 	
-	this.users[userId] = new User(user);
+	if (!this.users[user.userId])
+		this.users[user.userId] = new User(user);
 };
 
 userManager.removeUser = function(userId){

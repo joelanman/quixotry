@@ -9,10 +9,11 @@ var sys = require("sys"),
   
 
 fs.readFile('wordlist.csv', 'utf8', function (err, data) {
+	
   if (err) throw err;
   words = data.split('\n');
   sys.log("loaded dictionary, total words: " + words.length);
-  //console.log((words.indexOf(process.argv[2]) != -1) ? 'correct' : 'that is not a word');
+  
 });
 
 
@@ -106,7 +107,7 @@ server.addListener("connection", function(conn){
 			}
 			connections[conn.id] = user;
 						
-			conn.send(JSON.stringify({"action":"initRoom",state:state,users:userManager.users}));
+			conn.send(JSON.stringify({"action":"initRoom", state:state,users:userManager.users}));
 			conn.broadcast(JSON.stringify({"action":"joinRoom", "user":user}));
 		},
 		

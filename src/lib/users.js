@@ -82,9 +82,11 @@ exports.UserManager.prototype.get = function(userId){
 exports.UserManager.prototype.allReady = function(){
 	sys.log("Checking users are ready");
 	for (userId in this.users) {
-		sys.log(userId);
-		if (this.get(userId).ready() == false) 
+		if (this.get(userId).ready() == false) {
+			sys.log("User not ready! " + userId);
 			return false;
+		}
+		
 	}
 	
 	return true;
