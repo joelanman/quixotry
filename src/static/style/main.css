@@ -1,6 +1,10 @@
 
 ul, li{ margin:0;padding:0}
 
+a{
+	color:			#FF0;
+}
+
 body{
 	font-family: 	Arial, Helvetica, sans-serif;
 	text-align:		center;
@@ -26,6 +30,10 @@ body{
 
 .template{
 	display:		none !important;
+}
+
+#editSelfName{
+	display:		none;
 }
 
 #actions a{

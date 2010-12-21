@@ -4,37 +4,55 @@ var state = "",
 	vowels = "AEIOU",
 	consonants = "BCDFGHJKLMNPQRSTVWXYZ";
 
+var selfId = window.localStorage.getItem('userId');
+
 var userManager = {
 	users: {}
 };
 
-User = function(userId){
-	this.isReady = false;
+User = function(user){
+	
+	for (property in user){
+		this[property] = user[property];
+	}
 	
 	this.$el = userManager.$userTemplate.clone();
-	this.$el.attr('id','user_'+ userId);
-	this.$el.find('.name').text(userId);
+	this.$el.attr('id','user_'+ this.userId);
+	this.$el.find('.name').text(this.name());
 	this.$el.appendTo($('#users'));
+	
+	if (this.userId == selfId)
+		$('#selfName').text(this.name());
 
 };
 
+User.prototype.name = function(name){
+
+	if (name === undefined)
+		return this._name;
+		
+	this._name = name;
+		
+	return this;
+}
+
 User.prototype.ready = function(isReady){
 	
-	if (isReady == null)
-		return this.isReady;
+	if (isReady === undefined)
+		return this._isReady;
 		
-	this.isReady = isReady;
+	this._isReady = isReady;
 	
-	this.$el.find('.ready').toggle(this.isReady);
-	this.$el.find('.notReady').toggle(this.isReady == false);
+	this.$el.find('.ready').toggle(this._isReady);
+	this.$el.find('.notReady').toggle(this._isReady == false);
 
 }
 
-userManager.addUser = function(userId){
+userManager.addUser = function(user){
 
-	log("Adding user: " + userId);
+	log("Adding user: " + user.userId);
 	
-	this.users[userId] = new User(userId);
+	this.users[userId] = new User(user);
 };
 
 userManager.removeUser = function(userId){
@@ -53,15 +71,19 @@ userManager.get = function(userId){
 actions = {
 	"initRoom" : function(message){
 		log("initialising room...");
-		if(message.room.state == "lobby"){
-			var users = message.room.users;
+		if(message.state == "lobby"){
+			var users = message.users;
 			for (userId in users)
-				userManager.addUser(userId);
+				userManager.addUser(users[userId]);
 		}
 	},
 	"joinRoom" : function(message){
 		log("User joined room");
-		userManager.addUser(message.userId);
+		userManager.addUser(message.user);
+	},
+	"changeName" : function(message){
+		log("User changed name to " +message.name);
+		$('#user_'+message.userId).find('.name').text(message.name);
 	},
 	"closed" : function(message){
 		log("User left room");
@@ -73,7 +95,10 @@ actions = {
 	},
 	"yourId" : function(message){
 		log("Got Id");
+		selfId = message.userId;
 		window.localStorage.setItem('userId', message.userId);
+		var selfUser = userManager.get(message.userId);
+		$('#selfName').text(selfUser.name());
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);
@@ -85,7 +110,7 @@ actions = {
 			$('#lobby').hide();
 			$('#game').show();
 			
-			if(message.dealer)
+			if (message.dealer)
 				$('#tilePicker').show();
 			
 		}
@@ -162,6 +187,30 @@ documentReady = function(){
 	$tile = $('#tileTemplate').remove().removeAttr('id').removeClass('template').show();
 
 	userManager.$userTemplate = $('#userTemplate').clone().removeAttr('id').removeClass('template').show();
+	
+	$('#btn_changeName').live('click', function(e){
+		
+		e.preventDefault();
+		
+		$('#displaySelfName').hide();
+		$('#editSelfName').show();
+		
+		
+	});
+	
+	$('#frm_changeName').submit(function(e){
+		
+		e.preventDefault();
+		
+		var newName = $('#inp_changeName').val();
+	  	conn.send(JSON.stringify({'action':'changeName','name': newName}));
+		
+		$('#selfName').text(newName);
+		
+		$('#displaySelfName').show();
+		$('#editSelfName').hide();
+		
+	});
 
 	$('#actions a').click(function(e){
 		e.preventDefault();
@@ -194,7 +243,7 @@ documentReady = function(){
 	  	
 	  	var word = $.trim($('#output').text());
 	  	
-	  	conn.send(JSON.stringify({'action':'submit','word': word}));
+	  	conn.send(JSON.stringify({'action':'tryWord', 'word': word}));
 	  	
 	  });
 				
@@ -215,11 +264,8 @@ documentReady = function(){
 
 	conn.onopen = function() {
 		log("opened");
-		
-		var userId = window.localStorage.getItem('userId');
-		
+				
 		conn.send(JSON.stringify({"action":"joinRoom",
-								  "roomId" : hashOptions.room,
-								  "userId" : userId}));
+								  "userId" : selfId}));
 	};
 }
