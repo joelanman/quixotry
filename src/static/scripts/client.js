@@ -1,8 +1,8 @@
-var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
+var wsAddress = "ws://192.168.1.67:8008/"; //"ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
 
 var state = "",
-	vowels = "AEIOU",
-	consonants = "BCDFGHJKLMNPQRSTVWXYZ";
+	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distributions
+	consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
 
 var selfId = window.localStorage.getItem('userId');
 
@@ -83,7 +83,8 @@ actions = {
 		userManager.addUser(message.user);
 	},
 	"changeName" : function(message){
-		log("User changed name to " +message.name);
+		log("User changed name to " + message.name);
+		userManager.get(message.userId).name(message.name);
 		$('#user_'+message.userId).find('.name').text(message.name);
 	},
 	"closed" : function(message){
@@ -107,14 +108,28 @@ actions = {
 		if (state == "lobby"){
 			$('#lobby').show();
 			$('#game').hide();
+			if (message.users){
+				userManager.updateUsers(message.users);
+			}
 		} else if (state == "game"){
 			$('#lobby').hide();
 			$('#game').show();
 			
-			if (message.dealer)
+			if (message.dealerId == selfId) {
 				$('#tilePicker').show();
-			
+				$('#dealerTitle').text('Choose 8 letters for this round');
+			} else {
+				var dealerName = userManager.get(message.dealerId).name();
+				$('#dealerTitle').text(dealerName + ' is picking letters...');
+			}
 		}
+	},
+	"startGame" : function(message){
+		
+		$('#tilePicker').hide();
+		$('#dealerTitle').hide();
+		$('#clock').show();
+		clockInterval = setInterval("incrementClock()", 1000);
 	},
 	"addTile" : function(message){
 		log("Add tile: " + message.letter);
@@ -140,8 +155,6 @@ var pickTile = function(type){
 		
 	if ($('#input .tiles li').length == 8) {
 		conn.send(JSON.stringify({'action':'tileSelectionComplete'}));
-		$('#clock').show();
-		clockInterval = setInterval("incrementClock()", 1000);
 	}
 }
 	
@@ -149,6 +162,10 @@ incrementClock = function(){
 	$('#clock').text(parseInt($('#clock').text()) -1); 
 	if ($('#clock').text() == "0"){
 		clearInterval(clockInterval);
+		
+	  	var word = $.trim($('#output').text());
+		conn.send(JSON.stringify({'action':'submitWord', 'word' : word}));
+		
 	}
 }
 
@@ -237,18 +254,7 @@ documentReady = function(){
 	$('#tilePicker .consonant').click(function(e){
 		pickTile('consonant');
 	});
-	
-	$('#submit').click(function(e){
-	  
-	  	e.preventDefault();
-	  	
-	  	var word = $.trim($('#output').text());
-	  	
-	  	conn.send(JSON.stringify({'action':'tryWord', 'word': word}));
-	  	
-	  });
-				
-	
+		
 	var hash = window.location.hash;
 
 	if (hash.search(/^#/) != -1)

@@ -1,7 +1,7 @@
 var sys = require("sys");
 /*
  * User
- * UeerManager
+ * UserManager
  * Room
  * RoomManager
  */
@@ -9,17 +9,33 @@ var sys = require("sys");
 exports.User = function(userId){
 	this.userId    = userId;
 	this._name 	   = userId;
-	this._isReady  = false;
+	this._status   = "lobby";
 	this._roomId   = null;
 	this._isDealer = false;
+	this._score    = 0;
+	this._scoreChange = 0;
+	this._word 	   = "";
+	this._validWord = true;
 };
 
-exports.User.prototype.ready = function(isReady){
+exports.User.prototype.status = function(status){
 
-	if (isReady == null)
-		return this._isReady;
+	if (status == null)
+		return this._status;
 		
-	this._isReady = isReady;
+	this._status = status;
+	
+	return this;
+	
+}
+
+exports.User.prototype.scoreChange = function(scoreChange){
+
+	if (scoreChange == null)
+		return this._scoreChange;
+		
+	this._scoreChange = scoreChange;
+	this._score += scoreChange;
 	
 	return this;
 	
@@ -31,6 +47,26 @@ exports.User.prototype.name = function(name){
 		return this._name;
 		
 	this._name = name;
+		
+	return this;
+}
+
+exports.User.prototype.word = function(word){
+
+	if (word == null)
+		return this._word;
+		
+	this._word = word;
+		
+	return this;
+}
+
+exports.User.prototype.validWord = function(isValid){
+
+	if (isValid == null)
+		return this._validWord;
+		
+	this._validWord = isValid;
 		
 	return this;
 }
@@ -79,14 +115,13 @@ exports.UserManager.prototype.get = function(userId){
 	return this.users[userId];
 };
 
-exports.UserManager.prototype.allReady = function(){
-	sys.log("Checking users are ready");
+exports.UserManager.prototype.checkGroupStatus = function(status){
+	sys.log("Checking users are all in state: " + status);
 	for (userId in this.users) {
-		if (this.get(userId).ready() == false) {
-			sys.log("User not ready! " + userId);
+		if (this.get(userId).status() != status) {
+			sys.log("User not in state: " + userId);
 			return false;
 		}
-		
 	}
 	
 	return true;

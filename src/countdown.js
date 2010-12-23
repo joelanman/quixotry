@@ -59,11 +59,15 @@ var connections = {};
 var userManager = new users.UserManager();
 var state = "lobby";
 
+var validWords = [],
+	totalWordLength = 0;
+
 // Handle WebSocket Requests
 server.addListener("connection", function(conn){
 
 	var actions = {
 		"tryWord" : function(message){
+			
 			sys.log("Checking: " + message.word);
 		  
 	  		var validWord = (words.indexOf(message.word.toLowerCase()) != -1);
@@ -71,6 +75,47 @@ server.addListener("connection", function(conn){
 	  		sys.log("Valid: " + validWord);
 	  		
 			server.broadcast(conn.storage.get("username") + ": "+validWord);
+		},
+		
+		"submitWord" : function(message){
+			
+			sys.log("Submitted: " + message.word);
+			
+			var user = connections[conn.id],
+				word = message.word;
+			
+			user.word(word);
+			
+	  		var validWord = (words.indexOf(word.toLowerCase()) != -1);
+	  		
+	  		sys.log("Valid: " + validWord);
+			
+			user.validWord(validWord);
+			
+			if (validWord){
+				validWords.push(user);
+				totalWordLength += word.length;
+			}
+			
+			user.status("submittedWord");
+			
+			if (userManager.checkGroupStatus("submittedWord")) {
+				
+				var averageWordLength = totalWordLength/validWords.length;
+				
+				for (i = 0; i < validWords.length; i++){
+					var user = validWords[i];
+					var word = user.word();
+					if (word.length > averageWordLength) {
+						var scoreChange = word.length-averageWordLength;
+						user.scoreChange(scoreChange);
+					}
+				}
+				
+				conn.send(JSON.stringify({action:"state", state:"lobby", users:userManager.users}));
+				conn.broadcast(JSON.stringify({action:"state", state:"lobby", users:userManager.users}));
+				
+			}
 		},
 		
 		"changeName" : function(message){
@@ -107,18 +152,18 @@ server.addListener("connection", function(conn){
 			}
 			connections[conn.id] = user;
 						
-			conn.send(JSON.stringify({"action":"initRoom", state:state,users:userManager.users}));
+			conn.send(JSON.stringify({"action":"initRoom", state:state, users:userManager.users}));
 			conn.broadcast(JSON.stringify({"action":"joinRoom", "user":user}));
 		},
 		
 		"userReady" : function(message){
 			sys.log("User ready: " + message.userId);
 			var user = userManager.get(message.userId)
-			user.ready(message.isReady);
+			user.status((message.isReady) ? "ready" : "lobby");
 			conn.broadcast(JSON.stringify({"action":"userReady","userId":message.userId, "isReady":message.isReady}));
 			
 			if (message.isReady){
-				if (userManager.allReady()) {
+				if (userManager.checkGroupStatus("ready")) {
 					
 					server.broadcast(JSON.stringify({
 						"action": "state",
@@ -130,12 +175,12 @@ server.addListener("connection", function(conn){
 						conn.send(JSON.stringify({
 							"action": "state",
 							"state":  "game",
-							"dealer":  true
+							"dealerId":  user.userId
 						}));
 						conn.broadcast(JSON.stringify({
 							"action": "state",
 							"state":  "game",
-							"dealer":  false
+							"dealerId":  user.userId
 						}));
 					}
 
@@ -153,6 +198,11 @@ server.addListener("connection", function(conn){
 			
 			conn.broadcast(JSON.stringify({"action":"addTile", "letter":message.letter}));
 		},
+		"tileSelectionComplete" : function(message){
+			
+			conn.send(JSON.stringify({"action":"startGame"}));
+			conn.broadcast(JSON.stringify({"action":"startGame"}));
+		}
 	}
 
 	conn.addListener("message", function(message){

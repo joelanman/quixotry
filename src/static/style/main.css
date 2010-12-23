@@ -1,8 +1,22 @@
 
-ul, li{ margin:0;padding:0}
+h1{
+	font-size:		36px;
+	color:			#FFF;
+	font-weight:	bold;
+	letter-spacing: -0.07em;
+	text-shadow:	0 0 2px #000;
+	-webkit-transform:	rotate(-3deg);
+}
+
+ul, li{ margin:0;padding:0;list-style:none}
 
 a{
 	color:			#FF0;
+	text-decoration:	none;
+}
+
+a:hover{
+	text-decoration:	underline;
 }
 
 body{
