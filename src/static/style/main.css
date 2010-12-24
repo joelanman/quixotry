@@ -38,8 +38,29 @@ body{
 	display:		none;
 }
 
+#chat{
+	margin:			10px 0;
+}
+
 #users{
-	margin:			0 0 20px 0;
+	margin:			0 auto 20px auto;
+	text-align:		left;
+	width:			600px;
+	background:		#EEE;
+	padding:		10px;
+	border-radius:	10px;
+	color:			#333;
+}
+
+#headings{
+	color:			#777;
+}
+
+#users .col{
+	display:		inline-block;
+	width:			100px;
+	margin:			5px 10px;
+	overflow:		hidden;
 }
 
 .template{
@@ -71,7 +92,7 @@ body{
 	width:			80px;
 	height:			80px;
 	line-height:	80px;
-	margin:			0 0 50px 0;
+	margin:			0 auto 50px auto;
 }
 
 #input{
@@ -91,6 +112,10 @@ body{
 	padding:		10px 20px 20px 20px;
 	min-height:		60px;
 	text-align:		left;
+}
+
+.tiles{
+	min-height:		62px;
 }
 
 .tiles li{

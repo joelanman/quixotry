@@ -28,12 +28,26 @@ User.prototype.update = function(user){
 	
 	this.$el.find('.name').text(this.name());
 	this.$el.find('.word').text(this.word());
+	this.$el.find('.scoreChange').text(this.scoreChange());
 	this.$el.find('.score').text(this.score());
+	this.ready(this._status == "ready");
 	
 	if (this.userId == selfId)
 		$('#selfName').text(this.name());
 		
 	return this;
+}
+
+User.prototype.scoreChange = function(scoreChange){
+
+	if (scoreChange == null)
+		return this._scoreChange;
+		
+	this._scoreChange = scoreChange;
+	this._score += scoreChange;
+	
+	return this;
+	
 }
 
 User.prototype.name = function(name){
@@ -53,8 +67,15 @@ User.prototype.ready = function(isReady){
 		
 	this._isReady = isReady;
 	
-	this.$el.find('.ready').toggle(this._isReady);
-	this.$el.find('.notReady').toggle(this._isReady == false);
+	this.$el.find('.ready').toggle(isReady);
+	this.$el.find('.notReady').toggle(isReady == false);
+	
+	if (this.userId == selfId){
+	  	$('#actions .ready').toggle(isReady == false);
+	  	$('#actions .notReady').toggle(isReady);
+	}
+	
+	return this;
 
 }
 
@@ -150,7 +171,8 @@ actions = {
 		} else if (state == "game"){
 			$('#lobby').hide();
 			$('#game').show();
-			
+			$('#input .tiles, #output .tiles').empty();
+			$('#clock').hide().text('30');
 			if (message.dealerId == selfId) {
 				$('#tilePicker').show();
 				$('#dealerTitle').text('Choose 8 letters for this round');
@@ -248,7 +270,15 @@ documentReady = function(){
 		
 		$('#displaySelfName').hide();
 		$('#editSelfName').show();
+		$('#inp_changeName').focus();
 		
+	});
+	
+	$('#btn_saveChangeName').live('click', function(e){
+
+		e.preventDefault();
+		
+		$('#frm_changeName').submit();
 		
 	});
 	
@@ -274,7 +304,6 @@ documentReady = function(){
 	  	userManager.get(selfId).ready(isReady);
 	  	
 	  	conn.send(JSON.stringify({'action':'userReady', 'isReady': isReady, 'userId':selfId}));
-	  	$('#actions a').toggle();
 	});
 
 	$('.tiles a').live('click', function(e){

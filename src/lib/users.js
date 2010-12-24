@@ -136,3 +136,14 @@ exports.UserManager.prototype.checkGroupStatus = function(status){
 	
 	return true;
 }
+
+exports.UserManager.prototype.count = function(){
+	
+	var count = 0;
+	
+	for (userId in this.users) {
+		count++;
+	}
+	
+	return count;
+}

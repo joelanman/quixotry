@@ -21,7 +21,7 @@
 	
 	<div id="chat">
 		<div id="displaySelfName">
-			<div id="selfName"></div>
+			<span id="selfName"></span>
 			<a href="#" id="btn_changeName">change</a>
 		</div>
 		<div id="editSelfName">
@@ -33,13 +33,12 @@
 	</div>
 
 	<div id="lobby">
-	
-		<h2>Players:</h2>
-	
+		
 		<ul id="users">
 			<li id="userTemplate" class="template">
 				<span class="col name"></span>
 				<span class="col word"></span>
+				<span class="col scoreChange"></span>
 				<span class="col score"></span>
 				<span class="readyState">
 					<span class="ready">
@@ -48,6 +47,14 @@
 					<span class="notReady">
 						Not Ready!
 					</span>
+				</span>
+			</li>
+			<li id="headings">
+				<span class="col name">Name</span>
+				<span class="col word">Word</span>
+				<span class="col scoreChange">Score</span>
+				<span class="col score">Total Score</span>
+				<span class="readyState">
 				</span>
 			</li>
 		</ul>

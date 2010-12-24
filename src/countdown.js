@@ -95,19 +95,23 @@ server.addListener("connection", function(conn){
 			if (validWord){
 				validWords.push(user);
 				totalWordLength += word.length;
+			} else {
+				user.scoreChange(0);
 			}
 			
 			user.status("submittedWord");
 			
 			if (userManager.checkGroupStatus("submittedWord")) {
 				
-				var averageWordLength = totalWordLength/validWords.length;
+				var averageWordLength = totalWordLength/userManager.count();
+				
+				sys.log(averageWordLength);
 				
 				for (i = 0; i < validWords.length; i++){
 					var user = validWords[i];
 					var word = user.word();
 					if (word.length > averageWordLength) {
-						var scoreChange = word.length-averageWordLength;
+						var scoreChange = Math.ceil(word.length-averageWordLength) * 10;
 						user.scoreChange(scoreChange);
 					}
 				}
