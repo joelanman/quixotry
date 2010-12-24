@@ -41,6 +41,16 @@ exports.User.prototype.scoreChange = function(scoreChange){
 	
 }
 
+exports.User.prototype.score = function(score){
+
+	if (score == null)
+		return this._score;
+		
+	this._score = score;
+		
+	return this;
+}
+
 exports.User.prototype.name = function(name){
 
 	if (name == null)
