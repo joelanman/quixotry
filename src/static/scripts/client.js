@@ -192,7 +192,7 @@ actions = {
 	"startGame" : function(message){
 		
 		$('#tilePicker').addClass('disabled');
-		$('#dealerTitle').hide();
+		$('#dealerTitle').text('Find the longest word!');
 		clockInterval = setInterval("incrementClock()", 1000);
 	},
 	"addTile" : function(message){
