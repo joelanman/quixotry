@@ -17,19 +17,31 @@
 </head>
 <body>
 	
-	<h1>The Great Big Word Game</h1>
+	<div id="header">
+		
+		<h1>The Great Big Word Game</h1>
+		
+		<div id="chat">
+			<div id="displaySelfName">
+				<span id="selfName"></span>
+				<a href="#" id="btn_changeName">change</a>
+			</div>
+			<div id="editSelfName">
+				<form action="" id="frm_changeName">
+					<input id="inp_changeName" type="text" />
+					<a href="#" id="btn_saveChangeName">ok</a>
+				</form>
+			</div>
+		</div>
 	
-	<div id="chat">
-		<div id="displaySelfName">
-			<span id="selfName"></span>
-			<a href="#" id="btn_changeName">change</a>
-		</div>
-		<div id="editSelfName">
-			<form action="" id="frm_changeName">
-				<input id="inp_changeName" type="text" />
-				<a href="#" id="btn_saveChangeName">ok</a>
-			</form>
-		</div>
+	</div>
+	
+	<div id="login">
+		<form action="" id="frm_login">
+			<h2>Please enter your name to get started</h2>
+			<input class="name" type="text" />
+			<a href="#" class="submit">OK</a>
+		</form>
 	</div>
 
 	<div id="lobby">
@@ -40,29 +52,14 @@
 				<span class="col word"></span>
 				<span class="col scoreChange"></span>
 				<span class="col score"></span>
-				<span class="readyState">
-					<span class="ready">
-						Ready!
-					</span>
-					<span class="notReady">
-						Not Ready!
-					</span>
-				</span>
 			</li>
 			<li id="headings">
 				<span class="col name">Name</span>
 				<span class="col word">Word</span>
 				<span class="col scoreChange">Score</span>
 				<span class="col score">Total Score</span>
-				<span class="readyState">
-				</span>
 			</li>
 		</ul>
-		
-		<div id="actions">
-			<a class="ready" href="#">Play game!</a>
-			<a class="notReady" href="#">Hang on - I'm not ready!</a>
-		</div>
 	
 	</div>
 
@@ -70,12 +67,13 @@
 	
 		<h2 id="dealerTitle"></h2>
 			
+		<div id="clock">30</div>
+		
 		<div id="tilePicker">
-			<a class="consonant" href="#">Consonant</a>
-			<a class="vowel" href="#">Vowel</a>
+			<a class="consonant button" href="#">Consonant</a>
+			<a class="vowel button" href="#">Vowel</a>
 		</div>
 
-		<div id="clock">30</div>
 		<div id="input">
 			<ul class="tiles">
 				<li class="template" id="tileTemplate"><a href="#"></a></li>

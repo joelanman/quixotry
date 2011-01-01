@@ -96,6 +96,17 @@ exports.UserManager = function(){
 	this.users = {};
 };
 
+exports.UserManager.prototype.dealer = function(userId){
+
+	if (userId == null){
+		for (userId in this.users){
+			return this.users[userId].userId;
+			break;
+		}
+	}
+	
+};
+
 exports.UserManager.prototype.addUser = function(userId){
 
 	sys.log("Adding user: " + userId);
@@ -110,9 +121,7 @@ exports.UserManager.prototype.removeUser = function(userId){
 	sys.log("Removing user: " + userId);
 	
 	var user = this.users[userId];
-	
-	user.room().removeUser(user);
-	
+		
 	delete this.users[userId];
 };
 

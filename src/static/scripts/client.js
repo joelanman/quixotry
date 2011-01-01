@@ -1,8 +1,6 @@
-var wsAddress = "ws://192.168.1.67:8008/"; //"ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
+var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
 
-var state = "",
-	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distributions
-	consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
+var state = "";
 
 var selfId = window.localStorage.getItem('userId');
 
@@ -30,7 +28,6 @@ User.prototype.update = function(user){
 	this.$el.find('.word').text(this.word());
 	this.$el.find('.scoreChange').text(this.scoreChange());
 	this.$el.find('.score').text(this.score());
-	this.ready(this._status == "ready");
 	
 	if (this.userId == selfId)
 		$('#selfName').text(this.name());
@@ -58,25 +55,6 @@ User.prototype.name = function(name){
 	this._name = name;
 		
 	return this;
-}
-
-User.prototype.ready = function(isReady){
-	
-	if (isReady === undefined)
-		return this._isReady;
-		
-	this._isReady = isReady;
-	
-	this.$el.find('.ready').toggle(isReady);
-	this.$el.find('.notReady').toggle(isReady == false);
-	
-	if (this.userId == selfId){
-	  	$('#actions .ready').toggle(isReady == false);
-	  	$('#actions .notReady').toggle(isReady);
-	}
-	
-	return this;
-
 }
 
 User.prototype.score = function(score){
@@ -129,10 +107,28 @@ userManager.get = function(userId){
 actions = {
 	"initRoom" : function(message){
 		log("initialising room...");
+		
+		var users = message.users;
+		for (userId in users)
+			userManager.addUser(users[userId]);
+			
 		if(message.state == "lobby"){
-			var users = message.users;
-			for (userId in users)
-				userManager.addUser(users[userId]);
+			
+			$('#lobby').show();
+			$('#chat').show();
+			$('#game').hide();
+			$('#login').hide();
+			
+		} else if(message.state == "game"){
+			
+			$('#game').show();
+			$('#chat').show();
+			$('#lobby').hide();
+			$('#login').hide();
+			
+			for (var letter in message.letters){
+				addTile(message.letters[letter]);
+			}
 		}
 	},
 	"joinRoom" : function(message){
@@ -148,10 +144,6 @@ actions = {
 		log("User left room");
 		userManager.removeUser(message.userId);
 	},
-	"userReady" : function(message){
-		log("User ready");
-		userManager.get(message.userId).ready(message.isReady);
-	},
 	"yourId" : function(message){
 		log("Got Id");
 		selfId = message.userId;
@@ -163,20 +155,35 @@ actions = {
 		log("Game state: " + message.state);
 		state = message.state;
 		if (state == "lobby"){
+			
 			$('#lobby').show();
 			$('#game').hide();
 			if (message.users){
 				userManager.updateUsers(message.users);
 			}
-		} else if (state == "game"){
+			
+		} else if (state == "login"){
+			
+			$('#login').show();
+			$('#chat').hide();
 			$('#lobby').hide();
+			$('#game').hide();
+			
+			$('#frm_login').find('.name').focus();
+			
+		} else if (state == "game"){
+			
+			$('#lobby').hide();
+			$('#dealerTitle').show();
 			$('#game').show();
 			$('#input .tiles, #output .tiles').empty();
-			$('#clock').hide().text('30');
+			$('#clock').text('30');
 			if (message.dealerId == selfId) {
-				$('#tilePicker').show();
+				$('#tilePicker').removeClass('disabled');
 				$('#dealerTitle').text('Choose 8 letters for this round');
 			} else {
+				if ($('#tilePicker').hasClass('disabled') == false)
+					$('#tilePicker').addClass('disabled');
 				var dealerName = userManager.get(message.dealerId).name();
 				$('#dealerTitle').text(dealerName + ' is picking letters...');
 			}
@@ -184,9 +191,8 @@ actions = {
 	},
 	"startGame" : function(message){
 		
-		$('#tilePicker').hide();
+		$('#tilePicker').addClass('disabled');
 		$('#dealerTitle').hide();
-		$('#clock').show();
 		clockInterval = setInterval("incrementClock()", 1000);
 	},
 	"addTile" : function(message){
@@ -199,21 +205,23 @@ actions = {
 var addTile = function(letter){
 	
 	var $newTile = $tile.clone();
-	$newTile.find('a').text(letter);
+	
+	$newTile.css({'opacity':0});
+	
+	var a = $newTile.find('a');
+	a.text(letter)
+	 .css({'position':'relative', 'top':-80});
+	 
 	$newTile.appendTo('#input .tiles');
+	
+	$newTile.animate({'opacity':1});
+	a.animate({'top':-5});
 }
 
 var pickTile = function(type){
-	var letters = (type == "vowel") ? vowels : consonants;
-	var index = Math.floor(Math.random()*letters.length)
-	var letter = letters.substring(index,index+1);
-	addTile(letter)
 	
-	conn.send(JSON.stringify({'action':'addTile','letter':letter}));
+	conn.send(JSON.stringify({'action':'chooseTile','type':type}));
 		
-	if ($('#input .tiles li').length == 8) {
-		conn.send(JSON.stringify({'action':'tileSelectionComplete'}));
-	}
 }
 	
 incrementClock = function(){
@@ -296,16 +304,6 @@ documentReady = function(){
 		
 	});
 
-	$('#actions a').click(function(e){
-		e.preventDefault();
-		
-	  	var isReady = !userManager.get(selfId).ready();
-	  	
-	  	userManager.get(selfId).ready(isReady);
-	  	
-	  	conn.send(JSON.stringify({'action':'userReady', 'isReady': isReady, 'userId':selfId}));
-	});
-
 	$('.tiles a').live('click', function(e){
 		e.preventDefault();
 		var destination = ($(this).closest('#input').length) ? '#output' : '#input';
@@ -319,25 +317,31 @@ documentReady = function(){
 	$('#tilePicker .consonant').click(function(e){
 		pickTile('consonant');
 	});
+	
+	$('#frm_login').submit(function(e){
 		
-	var hash = window.location.hash;
-
-	if (hash.search(/^#/) != -1)
-		hash = hash.substring(1);
-
-	var hashArray = hash.split('&');
-
-	var hashOptions = {};
-
-	for (var i = 0; i < hashArray.length; i++) {
-		var nameValue = hashArray[i].split('=');
-		hashOptions[nameValue[0]] = nameValue[1];
+		e.preventDefault();
+		var name = $('#frm_login').find('.name').val();
+		
+		conn.send(JSON.stringify({"action" :"joinRoom",
+								  "userId" : selfId,
+								  "name"   : name}));
+		
+	});
+		
+	if (selfId){
+		conn.onopen = function() {
+			log("opened");
+					
+			conn.send(JSON.stringify({"action":"joinRoom",
+									  "userId" : selfId}));
+		};
+	} else {
+		$('#login').show();
+		$('#chat').hide();
+		$('#game').hide();
+		$('#lobby').hide();
 	}
 
-	conn.onopen = function() {
-		log("opened");
-				
-		conn.send(JSON.stringify({"action":"joinRoom",
-								  "userId" : selfId}));
-	};
+	
 }
