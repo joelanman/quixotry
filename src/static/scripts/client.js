@@ -8,74 +8,8 @@ var userManager = {
 	users: {}
 };
 
-User = function(user){
-		
-	this.$el = userManager.$userTemplate.clone();
-	this.$el.attr('id','user_'+ user.userId);
-	
-	this.update(user);
-	
-	this.$el.appendTo($('#users'));
-};
-
-User.prototype.update = function(user){
-
-	for (property in user){
-		this[property] = user[property];
-	}
-	
-	this.$el.find('.name').text(this.name());
-	this.$el.find('.word').text(this.word());
-	this.$el.find('.scoreChange').text(this.scoreChange());
-	this.$el.find('.score').text(this.score());
-	
-	if (this.userId == selfId)
-		$('#selfName').text(this.name());
-		
-	return this;
-}
-
-User.prototype.scoreChange = function(scoreChange){
-
-	if (scoreChange == null)
-		return this._scoreChange;
-		
-	this._scoreChange = scoreChange;
-	this._score += scoreChange;
-	
-	return this;
-	
-}
-
-User.prototype.name = function(name){
-
-	if (name === undefined)
-		return this._name;
-		
-	this._name = name;
-		
-	return this;
-}
-
-User.prototype.score = function(score){
-
-	if (score == null)
-		return this._score;
-		
-	this._score = score;
-		
-	return this;
-}
-
-User.prototype.word = function(word){
-
-	if (word == null)
-		return this._word;
-		
-	this._word = word;
-		
-	return this;
-}
+var states = {},
+	currentState = {};
 
 userManager.addUser = function(user){
 
@@ -104,7 +38,28 @@ userManager.get = function(userId){
 	return this.users[userId];
 };
 
-actions = {
+var changeState = function(state, message){
+	
+	if (states[state]) {
+	
+		currentState = states[state];
+		currentStateName = state;
+		
+		try {
+			states[state]._init(message);
+		} catch (err){
+			sys.log("Init failed for state: "+state);
+		}
+		
+	} else {
+		
+		// error - state not found
+	}
+	
+}
+
+states.common = {
+
 	"initRoom" : function(message){
 		log("initialising room...");
 		
@@ -129,6 +84,12 @@ actions = {
 			for (var letter in message.letters){
 				addTile(message.letters[letter]);
 			}
+			
+			if (message.time != -1){
+				$('#clock').text(message.time);
+				clockInterval = setInterval("incrementClock()", 1000);
+			}
+			
 		}
 	},
 	"joinRoom" : function(message){
@@ -154,52 +115,68 @@ actions = {
 	"state" : function(message){
 		log("Game state: " + message.state);
 		state = message.state;
-		if (state == "lobby"){
-			
-			$('#lobby').show();
-			$('#game').hide();
-			if (message.users){
-				userManager.updateUsers(message.users);
-			}
-			
-		} else if (state == "login"){
-			
-			$('#login').show();
-			$('#chat').hide();
-			$('#lobby').hide();
-			$('#game').hide();
-			
-			$('#frm_login').find('.name').focus();
-			
-		} else if (state == "game"){
-			
-			$('#lobby').hide();
-			$('#dealerTitle').show();
-			$('#game').show();
-			$('#input .tiles, #output .tiles').empty();
-			$('#clock').text('30');
-			if (message.dealerId == selfId) {
-				$('#tilePicker').removeClass('disabled');
-				$('#dealerTitle').text('Choose 8 letters for this round');
-			} else {
-				if ($('#tilePicker').hasClass('disabled') == false)
-					$('#tilePicker').addClass('disabled');
-				var dealerName = userManager.get(message.dealerId).name();
-				$('#dealerTitle').text(dealerName + ' is picking letters...');
-			}
+		
+		changeState(state, message);
+	}
+}
+
+states.lobby = {
+	"_init" : function(message){
+		$('#lobby').show();
+		$('#game').hide();
+		if (message.users){
+			userManager.updateUsers(message.users);
+		}
+	}
+};
+
+states.chooseTiles = {
+
+	"_init" : function(message){
+				
+		$('#lobby').hide();
+		$('#dealerTitle').show();
+		$('#game').show();
+		$('#input .tiles, #output .tiles').empty();
+		if (message.dealerId == selfId) {
+			$('#tilePicker').show().removeClass('disabled');
+			$('#dealerTitle').text('Choose 8 letters for this round');
+		} else {
+			$('#tilePicker').hide();
+			var dealerName = userManager.get(message.dealerId).name();
+			$('#dealerTitle').text(dealerName + ' is picking letters...');
 		}
 	},
-	"startGame" : function(message){
-		
-		$('#tilePicker').addClass('disabled');
-		$('#dealerTitle').text('Find the longest word!');
-		clockInterval = setInterval("incrementClock()", 1000);
-	},
+
 	"addTile" : function(message){
 		log("Add tile: " + message.letter);
 		addTile(message.letter);
 	}
-}
+	
+};
+
+states.game = {
+	
+	"_init" : function(message){
+		
+		$('#tilePicker').fadeOut('fast');
+		$('#dealerTitle').text('Find the longest word!');
+		
+		$('#clock').text('30');
+		clockInterval = setInterval("incrementClock()", 1000);
+	},
+};
+
+states.login = {
+	"_init" : function(message){
+		$('#login').show();
+		$('#chat').hide();
+		$('#lobby').hide();
+		$('#game').hide();
+		
+		$('#frm_login').find('.name').focus();
+	}
+};
 
 	
 var addTile = function(letter){
@@ -247,11 +224,24 @@ if (window["WebSocket"]) {
 	conn = new WebSocket(wsAddress);
 
 	conn.onmessage = function(evt) {
-		log("Received: " +evt.data);
+		log("Received: " + evt.data);
 		try{
 			var message = JSON.parse(evt.data);
-			actions[message.action](message);
-		}catch(err){
+			
+			if (currentState[message.action]){
+				currentState[message.action](message);
+				
+			} else if (states.common[message.action]){
+				states.common[message.action](message);
+			} else {
+				log("Invalid message in this state");
+				conn.send(JSON.stringify({
+					action: "error",
+					message: "The message you sent was not valid in the current state: " + msg
+				}));	
+			}
+			
+		} catch(err) {
 			// not valid json
 		}
 	};
@@ -343,5 +333,4 @@ documentReady = function(){
 		$('#lobby').hide();
 	}
 
-	
 }

@@ -67,7 +67,8 @@ var initRound = function(){
 	round = {
 		"validWords" : [],
 		"totalWordLength" : 0,
-		"letters" : ""
+		"letters" : "",
+		"time" : -1
 	};
 }
 
@@ -82,7 +83,7 @@ var startGame = function(){
 		
 		var msgOut = JSON.stringify({
 			"action": "state",
-			"state":  "game",
+			"state":  "chooseTiles",
 			"dealerId":  userManager.dealer()
 		});
 		
@@ -201,7 +202,8 @@ states.game = {
 		msg.conn.send(JSON.stringify({"action":	"initRoom",
 									  "state":	 currentStateName,
 									  "users":	 userManager.users,
-									  "letters": round.letters}));
+									  "letters": round.letters,
+									  "time":	 round.time}));
 									  
 		msg.conn.broadcast(JSON.stringify({"action":"joinRoom", "user":user}));
 	},
@@ -219,9 +221,19 @@ states.game = {
 		server.broadcast(JSON.stringify({'action':'addTile','letter':letter}));
 			
 		if (round.letters.length == 8) {
-			server.broadcast(JSON.stringify({'action': 'startGame'}));
-		}
-		
+			server.broadcast(JSON.stringify({'action': 'state', 'state':'game'}));
+			round.time = 30;
+			incrementClock = function(){
+				round.time -= 1;
+				
+				if (round.time == 0){
+					clearInterval(clockInterval);					
+				}
+			}
+			
+			clockInterval = setInterval("incrementClock()", 1000);
+
+		}	
 	},
 			
 	"submitWord" : function(msg){
@@ -307,7 +319,7 @@ server.addListener("connection", function(conn){
 
 		msgObj.conn = conn;
 		
-		if(currentState[msgObj.action]){
+		if (currentState[msgObj.action]){
 			currentState[msgObj.action](msgObj);
 			
 		} else {
@@ -315,10 +327,8 @@ server.addListener("connection", function(conn){
 			conn.send(JSON.stringify({
 				action: "error",
 				message: "The message you sent was not valid in the current state: " + msg
-			}));
-			
+			}));	
 		}
-		
 	});
 });
 
