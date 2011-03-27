@@ -60,8 +60,7 @@ var connections = {};
 
 var userManager = new users.UserManager();
 var round = {};
-var currentState = {};
-var currentStateName = "";
+var currentState = "";
 	
 var initRound = function(){
 	round = {
@@ -145,7 +144,9 @@ states.lobby = {
 					"action": "yourId",
 					"userId": userId
 				}));
-			} else { // user needs to log in
+				
+			} else { // id didn't exist - user needs to log in
+			
 				msg.conn.send(JSON.stringify({
 					"action": "state",
 					"state":  "login"
@@ -158,11 +159,11 @@ states.lobby = {
 		sys.log("User joined: " + msg.conn.id);
 					
 		msg.conn.send(JSON.stringify({"action":	"initRoom",
-									  "state":	 currentStateName,
+									  "state":	 currentState,
 									  "users":	 userManager.users,
 									  "letters": round.letters}));
 									  
-		msg.conn.broadcast(JSON.stringify({"action":"joinRoom", "user":user}));
+		msg.conn.broadcast(JSON.stringify({"action":"addUser", "user":user}));
 	}
 };
 
@@ -187,6 +188,7 @@ states.game = {
 					"action": "yourId",
 					"userId": userId
 				}));
+				
 			} else { // user needs to log in
 				msg.conn.send(JSON.stringify({
 					"action": "state",
@@ -199,13 +201,15 @@ states.game = {
 		
 		sys.log("User joined: " + msg.conn.id);
 					
-		msg.conn.send(JSON.stringify({"action":	"initRoom",
-									  "state":	 currentStateName,
-									  "users":	 userManager.users,
-									  "letters": round.letters,
-									  "time":	 round.time}));
+		msg.conn.send(JSON.stringify({
+			"action":	"initRoom",
+			"state":	currentState,
+			"users":	userManager.users,
+			"letters":	round.letters,
+			"time":		round.time
+		}));
 									  
-		msg.conn.broadcast(JSON.stringify({"action":"joinRoom", "user":user}));
+		msg.conn.broadcast(JSON.stringify({"action":"addUser", "user":user}));
 	},
 	
 	"chooseTile" : function(msg){
@@ -288,8 +292,7 @@ var changeState = function(state){
 	
 	if (states[state]) {
 	
-		currentState = states[state];
-		currentStateName = state;
+		currentState = state;
 		
 		try {
 			states[state]._init();
@@ -319,8 +322,8 @@ server.addListener("connection", function(conn){
 
 		msgObj.conn = conn;
 		
-		if (currentState[msgObj.action]){
-			currentState[msgObj.action](msgObj);
+		if (states[currentState][msgObj.action]){
+			states[currentState][msgObj.action](msgObj);
 			
 		} else {
 			

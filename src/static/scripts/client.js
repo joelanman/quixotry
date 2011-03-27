@@ -1,59 +1,37 @@
-var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
+var wsAddress = "ws://192.168.0.109:8008/"; //"ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
 
 var state = "";
 
-var selfId = window.localStorage.getItem('userId');
-
-var userManager = {
-	users: {}
-};
-
 var states = {},
-	currentState = {};
+	currentState = "";
 
-userManager.addUser = function(user){
-
-	log("Adding user: " + user.userId);
-	
-	if (!this.users[user.userId])
-		this.users[user.userId] = new User(user);
-};
-
-userManager.removeUser = function(userId){
-	
-	log("Removing user: " + userId);
-	
-	$('#user_'+ userId).fadeOut();
-	
-	delete this.users[userId];
-};
-
-userManager.updateUsers = function(users){
-	for (var id in users){
-		userManager.get(id).update(users[id]);
-	}
-}
-
-userManager.get = function(userId){
-	return this.users[userId];
-};
+var selfId = window.localStorage.getItem('userId');
 
 var changeState = function(state, message){
 	
-	if (states[state]) {
+	// end the current state
 	
-		currentState = states[state];
-		currentStateName = state;
+	if (currentState){
+		try {
+			states[currentState]._end();
+		} catch (err){
+			log("End failed for state: "+currentState);
+		}
+	}
+	
+	if (states[state]) {
+
+		currentState = state;
 		
 		try {
 			states[state]._init(message);
 		} catch (err){
-			sys.log("Init failed for state: "+state);
+			log("Init failed for state: "+state);
 		}
 		
 	} else {
 		
-		// error - state not found
+		log("state not found: " + state);
 	}
 	
 }
@@ -67,19 +45,16 @@ states.common = {
 		for (userId in users)
 			userManager.addUser(users[userId]);
 			
+		var selfUser = userManager.get(selfId);
+		$('#selfName').text(selfUser.name());
+			
 		if(message.state == "lobby"){
 			
-			$('#lobby').show();
-			$('#chat').show();
-			$('#game').hide();
-			$('#login').hide();
+			changeState('lobby');
 			
-		} else if(message.state == "game"){
+		} else if (message.state == "game"){
 			
-			$('#game').show();
-			$('#chat').show();
-			$('#lobby').hide();
-			$('#login').hide();
+			changeState('game');
 			
 			for (var letter in message.letters){
 				addTile(message.letters[letter]);
@@ -92,7 +67,7 @@ states.common = {
 			
 		}
 	},
-	"joinRoom" : function(message){
+	"addUser" : function(message){
 		log("User joined room");
 		userManager.addUser(message.user);
 	},
@@ -109,8 +84,6 @@ states.common = {
 		log("Got Id");
 		selfId = message.userId;
 		window.localStorage.setItem('userId', message.userId);
-		var selfUser = userManager.get(message.userId);
-		$('#selfName').text(selfUser.name());
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);
@@ -164,6 +137,7 @@ states.game = {
 		
 		$('#clock').text('30');
 		clockInterval = setInterval("incrementClock()", 1000);
+		
 	},
 };
 
@@ -175,6 +149,10 @@ states.login = {
 		$('#game').hide();
 		
 		$('#frm_login').find('.name').focus();
+	},
+	
+	"_end" : function(message){
+		$('#login').hide();
 	}
 };
 
@@ -224,26 +202,34 @@ if (window["WebSocket"]) {
 	conn = new WebSocket(wsAddress);
 
 	conn.onmessage = function(evt) {
+		
 		log("Received: " + evt.data);
+		
 		try{
+			
 			var message = JSON.parse(evt.data);
 			
-			if (currentState[message.action]){
-				currentState[message.action](message);
-				
-			} else if (states.common[message.action]){
-				states.common[message.action](message);
-			} else {
-				log("Invalid message in this state");
-				conn.send(JSON.stringify({
-					action: "error",
-					message: "The message you sent was not valid in the current state: " + msg
-				}));	
-			}
-			
 		} catch(err) {
-			// not valid json
+			log("The message was not valid JSON")
 		}
+		
+		if (currentState != "" && states[currentState][message.action]){
+			
+			states[currentState][message.action](message);
+			
+		} else if (states.common[message.action]){
+			
+			states.common[message.action](message);
+			
+		} else {
+			
+			log("Invalid message in this state");
+			conn.send(JSON.stringify({
+				action: "error",
+				message: "The message you sent was not valid in the current state: " + msg
+			}));	
+		}
+		
 	};
 
 	conn.onerror = function() {
@@ -323,14 +309,11 @@ documentReady = function(){
 		conn.onopen = function() {
 			log("opened");
 					
-			conn.send(JSON.stringify({"action":"joinRoom",
+			conn.send(JSON.stringify({"action" : "joinRoom",
 									  "userId" : selfId}));
 		};
 	} else {
-		$('#login').show();
-		$('#chat').hide();
-		$('#game').hide();
-		$('#lobby').hide();
+		changeState('login');
 	}
 
 }

@@ -1,3 +1,34 @@
+var userManager = {
+	users: {}
+};
+
+userManager.addUser = function(user){
+
+	log("Adding user: " + user.userId);
+	
+	if (!this.users[user.userId])
+		this.users[user.userId] = new User(user);
+};
+
+userManager.removeUser = function(userId){
+	
+	log("Removing user: " + userId);
+	
+	$('#user_'+ userId).fadeOut();
+	
+	delete this.users[userId];
+};
+
+userManager.updateUsers = function(users){
+	for (var id in users){
+		userManager.get(id).update(users[id]);
+	}
+}
+
+userManager.get = function(userId){
+	return this.users[userId];
+};
+
 User = function(user){
 		
 	this.$el = userManager.$userTemplate.clone();
