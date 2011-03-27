@@ -47,25 +47,9 @@ states.common = {
 			
 		var selfUser = userManager.get(selfId);
 		$('#selfName').text(selfUser.name());
-			
-		if(message.state == "lobby"){
-			
-			changeState('lobby');
-			
-		} else if (message.state == "game"){
-			
-			changeState('game');
-			
-			for (var letter in message.letters){
-				addTile(message.letters[letter]);
-			}
-			
-			if (message.time != -1){
-				$('#clock').text(message.time);
-				clockInterval = setInterval("incrementClock()", 1000);
-			}
-			
-		}
+		
+		changeState(message.state, message);
+
 	},
 	"addUser" : function(message){
 		log("User joined room");
@@ -80,11 +64,6 @@ states.common = {
 		log("User left room");
 		userManager.removeUser(message.userId);
 	},
-	"yourId" : function(message){
-		log("Got Id");
-		selfId = message.userId;
-		window.localStorage.setItem('userId', message.userId);
-	},
 	"state" : function(message){
 		log("Game state: " + message.state);
 		state = message.state;
@@ -96,21 +75,24 @@ states.common = {
 states.lobby = {
 	"_init" : function(message){
 		$('#lobby').show();
-		$('#game').hide();
 		if (message.users){
 			userManager.updateUsers(message.users);
 		}
-	}
+	},
+	
+	"_end" : function(message){
+		$('#lobby').hide();
+	},
 };
 
-states.chooseTiles = {
+states.chooseLetters = {
 
 	"_init" : function(message){
 				
-		$('#lobby').hide();
 		$('#dealerTitle').show();
 		$('#game').show();
 		$('#input .tiles, #output .tiles').empty();
+		
 		if (message.dealerId == selfId) {
 			$('#tilePicker').show().removeClass('disabled');
 			$('#dealerTitle').text('Choose 8 letters for this round');
@@ -118,9 +100,17 @@ states.chooseTiles = {
 			$('#tilePicker').hide();
 			var dealerName = userManager.get(message.dealerId).name();
 			$('#dealerTitle').text(dealerName + ' is picking letters...');
+			
+			for (var letter in message.letters){
+				addTile(message.letters[letter]);
+			}
 		}
 	},
 
+	"_end" : function(message){
+		$('#tilePicker').fadeOut('fast');
+	},
+	
 	"addTile" : function(message){
 		log("Add tile: " + message.letter);
 		addTile(message.letter);
@@ -132,28 +122,57 @@ states.game = {
 	
 	"_init" : function(message){
 		
-		$('#tilePicker').fadeOut('fast');
+		$('#dealerTitle').show();
+		$('#game').show();
+		
 		$('#dealerTitle').text('Find the longest word!');
 		
-		$('#clock').text('30');
-		clockInterval = setInterval("incrementClock()", 1000);
+		for (var letter in message.letters){
+			addTile(message.letters[letter]);
+		}
 		
+		if (message.time != -1){
+			$('#clock').text(message.time);
+			clockInterval = setInterval("incrementClock()", 1000);
+		}		
 	},
+	
+	"_end" : function(message){
+		$('#game').hide();
+	}
 };
 
 states.login = {
 	"_init" : function(message){
 		$('#login').show();
-		$('#chat').hide();
-		$('#lobby').hide();
-		$('#game').hide();
 		
 		$('#frm_login').find('.name').focus();
 	},
 	
 	"_end" : function(message){
 		$('#login').hide();
-	}
+		$('#chat').show();
+	},
+	
+	"initRoom" : function(message){
+		log("initialising room...");
+		
+		var users = message.users;
+		for (userId in users)
+			userManager.addUser(users[userId]);
+			
+		var selfUser = userManager.get(selfId);
+		$('#selfName').text(selfUser.name());
+		
+		changeState(message.state, message);
+
+	},
+	
+	"yourId" : function(message){
+		log("Got Id");
+		selfId = message.userId;
+		window.localStorage.setItem('userId', message.userId);
+	},
 };
 
 	
@@ -175,7 +194,7 @@ var addTile = function(letter){
 
 var pickTile = function(type){
 	
-	conn.send(JSON.stringify({'action':'chooseTile','type':type}));
+	conn.send(JSON.stringify({'action':'chooseLetter', 'type':type}));
 		
 }
 	
@@ -205,10 +224,8 @@ if (window["WebSocket"]) {
 		
 		log("Received: " + evt.data);
 		
-		try{
-			
+		try {
 			var message = JSON.parse(evt.data);
-			
 		} catch(err) {
 			log("The message was not valid JSON")
 		}
@@ -217,7 +234,7 @@ if (window["WebSocket"]) {
 			
 			states[currentState][message.action](message);
 			
-		} else if (states.common[message.action]){
+		} else if (currentState != "login" && states.common[message.action]){
 			
 			states.common[message.action](message);
 			
@@ -303,6 +320,11 @@ documentReady = function(){
 								  "userId" : selfId,
 								  "name"   : name}));
 		
+	});
+	
+	$('#frm_login .submit').click(function(e){
+		e.preventDefault();
+		$('#frm_login').submit();
 	});
 		
 	if (selfId){

@@ -82,13 +82,13 @@ var startGame = function(){
 		
 		var msgOut = JSON.stringify({
 			"action": "state",
-			"state":  "chooseTiles",
+			"state":  "chooseLetters",
 			"dealerId":  userManager.dealer()
 		});
 		
 		server.broadcast(msgOut);
 		
-		changeState('game');
+		changeState('chooseLetters');
 		
 	} else {
 		
@@ -98,16 +98,8 @@ var startGame = function(){
 
 var states = {};
 
-states.lobby = {
-	
-	"_init" : function(){
-		
-		sys.log("states.lobby._init");
-				
-		startGameInterval = setInterval(startGame, 10000);
-		
-	},
-	
+states.common = {
+
 	"changeName" : function(msg){
 		
 		var newName = msg.name;
@@ -123,6 +115,18 @@ states.lobby = {
 			"name":    newName,
 			"userId":  user.userId
 		}));
+	}
+	
+};
+
+states.lobby = {
+	
+	"_init" : function(){
+		
+		sys.log("states.lobby._init");
+				
+		startGameInterval = setInterval(startGame, 10000);
+		
 	},
 	
 	"joinRoom" : function(msg){
@@ -167,7 +171,97 @@ states.lobby = {
 	}
 };
 
+states.chooseLetters = {
+		
+	"joinRoom" : function(msg){
+				
+		try{ // user exists
+			
+			var user = userManager.get(msg.userId);
+			
+		} catch(err) {
+			
+			if (msg.name) { // user log in
+				var identifier = new Date().toString() + msg.conn.id;
+				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
+				var user = userManager.addUser(userId);
+				
+				user.name(msg.name);
+				
+				msg.conn.send(JSON.stringify({
+					"action": "yourId",
+					"userId": userId
+				}));
+				
+			} else { // user needs to log in
+				msg.conn.send(JSON.stringify({
+					"action": "state",
+					"state":  "login"
+				}));
+				return;
+			}
+		}
+		connections[msg.conn.id] = user;
+		
+		sys.log("User joined: " + msg.conn.id);
+					
+		msg.conn.send(JSON.stringify({
+			"action":	"initRoom",
+			"state":	currentState,
+			"users":	userManager.users,
+			"dealerId":  userManager.dealer(),
+			"letters":	round.letters,
+			"time":		round.time
+		}));
+									  
+		msg.conn.broadcast(JSON.stringify({"action":"addUser", "user":user}));
+	},
+	
+	"chooseLetter" : function(msg){
+		
+		var letters = (msg.type == "vowel") ? vowels : consonants;
+		var index = Math.floor(Math.random()*letters.length);
+		var letter = letters.substring(index,index+1);
+		
+		round.letters += letter;
+		
+		sys.log("Add tile: " + letter);
+		
+		server.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
+			
+		if (round.letters.length == 8) {
+			
+			round.time = 30;
+			
+			server.broadcast(JSON.stringify({'action': 	'state',
+											 'state': 	'game',
+											 'time': 	round.time}));
+			
+			incrementClock = function(){
+				round.time = round.time - 1;
+				
+				sys.log("Time left: " + round.time);
+				
+				if (round.time == 0){
+					clearInterval(clockInterval);					
+				}
+			}
+			
+			clockInterval = setInterval(incrementClock, 1000);
+			
+			changeState("game");
+
+		}	
+	}
+}
+
 states.game = {
+	
+	"_init" :  function(){
+		
+		userManager.setGroupStatus("game");
+		
+	},
 		
 	"joinRoom" : function(msg){
 				
@@ -210,34 +304,6 @@ states.game = {
 		}));
 									  
 		msg.conn.broadcast(JSON.stringify({"action":"addUser", "user":user}));
-	},
-	
-	"chooseTile" : function(msg){
-		
-		var letters = (msg.type == "vowel") ? vowels : consonants;
-		var index = Math.floor(Math.random()*letters.length);
-		var letter = letters.substring(index,index+1);
-		
-		round.letters += letter;
-		
-		sys.log("Add tile: " + letter);
-		
-		server.broadcast(JSON.stringify({'action':'addTile','letter':letter}));
-			
-		if (round.letters.length == 8) {
-			server.broadcast(JSON.stringify({'action': 'state', 'state':'game'}));
-			round.time = 30;
-			incrementClock = function(){
-				round.time -= 1;
-				
-				if (round.time == 0){
-					clearInterval(clockInterval);					
-				}
-			}
-			
-			clockInterval = setInterval("incrementClock()", 1000);
-
-		}	
 	},
 			
 	"submitWord" : function(msg){
@@ -322,11 +388,15 @@ server.addListener("connection", function(conn){
 
 		msgObj.conn = conn;
 		
-		if (states[currentState][msgObj.action]){
+		if (states[currentState][msgObj.action]){ // current state
+			
 			states[currentState][msgObj.action](msgObj);
 			
-		} else {
+		} else if (states.common[msgObj.action]){ // common events
 			
+			states.common[msgObj.action](msgObj);
+			
+		} else {
 			conn.send(JSON.stringify({
 				action: "error",
 				message: "The message you sent was not valid in the current state: " + msg

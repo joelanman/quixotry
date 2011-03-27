@@ -146,6 +146,16 @@ exports.UserManager.prototype.checkGroupStatus = function(status){
 	return true;
 }
 
+exports.UserManager.prototype.setGroupStatus = function(status){
+	
+	sys.log("Setting users to state: " + status);
+	
+	for (userId in this.users) {
+		this.get(userId).status(status);
+	}
+	
+}
+
 exports.UserManager.prototype.count = function(){
 	
 	var count = 0;
