@@ -114,6 +114,16 @@ states.chooseLetters = {
 	"addTile" : function(message){
 		log("Add tile: " + message.letter);
 		addTile(message.letter);
+	},
+	"dealerDead" : function(message){
+		
+		log("Dealer's dead!");
+		
+		$('#tilePicker').hide();
+		for (var i=0; i<message.letters.length;i++){
+			addTile(message.letters.charAt(i));
+		}
+		
 	}
 	
 };

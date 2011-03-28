@@ -16,8 +16,11 @@ fs.readFile('wordlist.csv', 'utf8', function (err, data) {
   
 });
 
-var	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distributions
-	consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
+var	vowels = "AAAEEEIIIOOOUU", // Scrabble distributions
+	consonants = "BBCCDDDFFGGGHHJKLLLMMNNNPPQRRRSSSTTTVVWWXYYZZ";
+	
+// var	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distributions
+//	consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
 
 var httpServer = http.createServer(function(request, response) {  
     var uri = url.parse(request.url).pathname;  
@@ -67,6 +70,8 @@ var initRound = function(){
 		"validWords" : [],
 		"totalWordLength" : 0,
 		"letters" : "",
+		"consonants" : 0,
+		"vowels" : 0,
 		"time" : -1
 	};
 }
@@ -83,10 +88,74 @@ var startGame = function(){
 		var msgOut = JSON.stringify({
 			"action": "state",
 			"state":  "chooseLetters",
-			"dealerId":  userManager.dealer()
+			"dealerId":  userManager.newDealer()
 		});
 		
 		server.broadcast(msgOut);
+		
+		dealerDead = function(){
+			
+			var letters = "";
+			
+			var numLetters = 8 - round.letters.length;
+			
+			var numConsonants = 5 - round.consonants;
+			var numVowels = 5 - round.vowels;
+			
+			if(numLetters < numConsonants){
+				numConsonants = numLetters;
+			}
+			
+			for (var i = 0; i < numConsonants; i++){
+						
+				var index = Math.floor(Math.random()*consonants.length);
+				letters += consonants.substring(index,index+1);
+		
+			}
+			
+			numLetters = numLetters - numConsonants;
+			
+			for (var i = 0; i < numLetters; i++){
+						
+				var index = Math.floor(Math.random()*vowels.length);
+				letters += vowels.substring(index,index+1);
+		
+			}
+			
+			round.letters += letters;
+			
+			var msgOut = JSON.stringify({
+				"action": "dealerDead",
+				"letters":  letters
+			});
+			
+			server.broadcast(msgOut);
+			
+			// to do: refactor this - same as when last letter is chosen
+			
+			round.time = 30;
+			
+			server.broadcast(JSON.stringify({'action': 	'state',
+											 'state': 	'game',
+											 'time': 	round.time}));
+			
+			incrementClock = function(){
+				round.time = round.time - 1;
+				
+				sys.log("Time left: " + round.time);
+				
+				if (round.time == 0){
+					clearInterval(clockInterval);					
+				}
+			}
+			
+			clockInterval = setInterval(incrementClock, 1000);
+			
+			changeState("game");
+			
+		};
+		
+		dealerDeadTimeout = setTimeout(dealerDead, 8 * 1000);
 		
 		changeState('chooseLetters');
 		
@@ -219,6 +288,15 @@ states.chooseLetters = {
 	
 	"chooseLetter" : function(msg){
 		
+		clearTimeout(dealerDeadTimeout);
+		dealerDeadTimeout = setTimeout(dealerDead, 8 * 1000);
+		
+		if (msg.type == "vowel"){
+			round.vowels += 1 ;
+		} else {
+			round.consonants += 1;
+		}
+		
 		var letters = (msg.type == "vowel") ? vowels : consonants;
 		var index = Math.floor(Math.random()*letters.length);
 		var letter = letters.substring(index,index+1);
@@ -334,7 +412,7 @@ states.game = {
 			
 			var averageWordLength = round.totalWordLength/userManager.count();
 			
-			sys.log(averageWordLength);
+			sys.log("Average word length: " + averageWordLength);
 			
 			for (i = 0; i < round.validWords.length; i++){
 				var user = round.validWords[i];
@@ -342,6 +420,8 @@ states.game = {
 				if (word.length > averageWordLength) {
 					var scoreChange = Math.ceil(word.length-averageWordLength) * 10;
 					user.scoreChange(scoreChange);
+				} else {
+					user.scoreChange(0);
 				}
 			}
 			

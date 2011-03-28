@@ -94,15 +94,62 @@ exports.User.prototype.dealer = function(isDealer){
 
 exports.UserManager = function(){
 	this.users = {};
+	this._dealerId = -1;
 };
 
 exports.UserManager.prototype.dealer = function(userId){
 
-	if (userId == null){
-		for (userId in this.users){
-			return this.users[userId].userId;
+	if (userId == null) {
+	
+		return this._dealerId;
+		
+	}
+	
+	this._dealerId = userId;
+	
+	return this;
+	
+};
+
+exports.UserManager.prototype.newDealer = function(){
+
+	if (this._dealerId == -1) {
+		
+		sys.log("no dealer, selecting first user")
+		
+		for (userId in this.users) {
+			this._dealerId = userId;
+			
+			sys.log("dealer: "+this._dealerId)
+			
+			return this._dealerId;
 			break;
 		}
+		
+	} else {
+	
+		var dealerFound = false;
+	
+		sys.log("getting user after current dealer...")
+		
+		for (userId in this.users) {
+			if (userId == this._dealerId){
+				dealerFound = true;
+			} else if (dealerFound)	{
+				sys.log("dealer: "+this._dealerId)
+				this._dealerId = userId;
+				return this._dealerId;
+				break;
+			}
+		}
+		
+		sys.log("dealer not found, must be the first user")
+		
+		// if dealer is last user, next will fail, and we want to select the first:
+		
+		this._dealerId = -1;
+		return (this.newDealer());
+		
 	}
 	
 };
