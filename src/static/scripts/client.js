@@ -1,9 +1,15 @@
-var wsAddress = "ws://192.168.0.109:8008/"; //"ws://0.0.0.0:8008/"; //"ws://192.168.1.78:8008/";
-
-var state = "";
+var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.0.109:8008/"; //"ws://192.168.1.78:8008/";
 
 var states = {},
 	currentState = "";
+	
+var round = {
+	"_init" : function(){
+		this.vowels = 0;
+		this.consonants = 0;
+	}
+};
+
 
 var selfId = window.localStorage.getItem('userId');
 
@@ -88,10 +94,15 @@ states.lobby = {
 states.chooseLetters = {
 
 	"_init" : function(message){
+		
+		round._init();
 				
 		$('#dealerTitle').show();
 		$('#game').show();
 		$('#input .tiles, #output .tiles').empty();
+		
+		$('#tilePicker .vowel').show();
+		$('#tilePicker .consonant').show();
 		
 		if (message.dealerId == selfId) {
 			$('#tilePicker').show().removeClass('disabled');
@@ -203,6 +214,23 @@ var addTile = function(letter){
 }
 
 var pickTile = function(type){
+	
+	if (type == "vowel"){
+		
+		round.vowels += 1;
+		
+		if (round.vowels >= 5){
+			$('#tilePicker .vowel').hide();
+		}
+	
+	} else {
+		
+		round.consonants += 1;
+		
+		if (round.consonants >= 5){
+			$('#tilePicker .consonant').hide();
+		}
+	}
 	
 	conn.send(JSON.stringify({'action':'chooseLetter', 'type':type}));
 		

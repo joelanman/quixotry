@@ -95,6 +95,8 @@ var startGame = function(){
 		
 		dealerDead = function(){
 			
+			clearTimeout(dealerDeadTimeout);
+			
 			var letters = "";
 			
 			var numLetters = 8 - round.letters.length;
@@ -308,6 +310,8 @@ states.chooseLetters = {
 		server.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
 			
 		if (round.letters.length == 8) {
+			
+			clearTimeout(dealerDeadTimeout);
 			
 			round.time = 30;
 			
