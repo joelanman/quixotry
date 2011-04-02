@@ -1,4 +1,4 @@
-var wsAddress = "ws://0.0.0.0:8008/"; //"ws://192.168.0.109:8008/"; //"ws://192.168.1.78:8008/";
+var socket = new io.Socket("0.0.0.0", {"reconnect": false});
 
 var states = {},
 	currentState = "";
@@ -24,6 +24,8 @@ var changeState = function(state, message){
 			log("End failed for state: "+currentState);
 		}
 	}
+	
+	log("changeState: " + state);
 	
 	if (states[state]) {
 
@@ -232,7 +234,7 @@ var pickTile = function(type){
 		}
 	}
 	
-	conn.send(JSON.stringify({'action':'chooseLetter', 'type':type}));
+	socket.send(JSON.stringify({'action':'chooseLetter', 'type':type}));
 		
 }
 	
@@ -242,7 +244,7 @@ incrementClock = function(){
 		clearInterval(clockInterval);
 		
 	  	var word = $.trim($('#output').text());
-		conn.send(JSON.stringify({'action':'submitWord', 'word' : word}));
+		socket.send(JSON.stringify({'action':'submitWord', 'word' : word}));
 		
 	}
 }
@@ -251,52 +253,34 @@ function log(data){
   console.log(data);
 }
 
-var conn, recvd, connections = 0;
-
-if (window["WebSocket"]) {
-	recvd = 0;
-
-	conn = new WebSocket(wsAddress);
-
-	conn.onmessage = function(evt) {
+socket.on('message', function(data){
+	
+	log("Received: " + data);
+	
+	try {
+		var message = JSON.parse(data);
+	} catch(err) {
+		log("The message was not valid JSON")
+	}
+	
+	if (currentState != "" && states[currentState][message.action]){
 		
-		log("Received: " + evt.data);
+		states[currentState][message.action](message);
 		
-		try {
-			var message = JSON.parse(evt.data);
-		} catch(err) {
-			log("The message was not valid JSON")
-		}
+	} else if (currentState != "login" && states.common[message.action]){
 		
-		if (currentState != "" && states[currentState][message.action]){
-			
-			states[currentState][message.action](message);
-			
-		} else if (currentState != "login" && states.common[message.action]){
-			
-			states.common[message.action](message);
-			
-		} else {
-			
-			log("Invalid message in this state");
-			conn.send(JSON.stringify({
-				action: "error",
-				message: "The message you sent was not valid in the current state: " + msg
-			}));	
-		}
+		states.common[message.action](message);
 		
-	};
-
-	conn.onerror = function() {
-	  log("error", arguments);
-	};
-
-	conn.onclose = function() {
-	  log("closed");
-	};
-
-}
-
+	} else {
+		
+		log("Invalid message in this state: " + data);
+		socket.send(JSON.stringify({
+			action: "error"
+		}));	
+	}
+	
+});
+	
 documentReady = function(){
 	
 	$tile = $('#tileTemplate').remove().removeAttr('id').removeClass('template').show();
@@ -326,7 +310,7 @@ documentReady = function(){
 		e.preventDefault();
 		
 		var newName = $('#inp_changeName').val();
-	  	conn.send(JSON.stringify({'action':'changeName','name': newName}));
+	  	socket.send(JSON.stringify({'action':'changeName','name': newName}));
 		
 		$('#selfName').text(newName);
 		
@@ -354,9 +338,9 @@ documentReady = function(){
 		e.preventDefault();
 		var name = $('#frm_login').find('.name').val();
 		
-		conn.send(JSON.stringify({"action" :"joinRoom",
-								  "userId" : selfId,
-								  "name"   : name}));
+		socket.send(JSON.stringify({"action" :"joinRoom",
+								  	"userId" : selfId,
+								  	"name"   : name}));
 		
 	});
 	
@@ -366,14 +350,16 @@ documentReady = function(){
 	});
 		
 	if (selfId){
-		conn.onopen = function() {
+		socket.on('connect', function() {
 			log("opened");
 					
-			conn.send(JSON.stringify({"action" : "joinRoom",
-									  "userId" : selfId}));
-		};
+			socket.send(JSON.stringify({"action" : "joinRoom",
+									  	"userId" : selfId}));
+		});
 	} else {
 		changeState('login');
 	}
+	
+	socket.connect();
 
 }

@@ -6,8 +6,10 @@ var sys = require("sys");
  * RoomManager
  */
 
-exports.User = function(userId){
+exports.User = function(userId, sessionId){
+	
 	this.userId    = userId;
+	this.sessionId = sessionId;
 	this._name 	   = userId;
 	this._status   = "lobby";
 	this._roomId   = null;
@@ -16,6 +18,7 @@ exports.User = function(userId){
 	this._scoreChange = 0;
 	this._word 	   = "";
 	this._validWord = true;
+	this._lastActive = new Date();
 };
 
 exports.User.prototype.status = function(status){
@@ -91,6 +94,16 @@ exports.User.prototype.dealer = function(isDealer){
 	return this;
 }
 
+exports.User.prototype.lastActive = function(date){
+
+	if (date == null)
+		return this._lastActive;
+		
+	this._lastActive = date;
+	
+	return this;
+	
+}
 
 exports.UserManager = function(){
 	this.users = {};
@@ -154,11 +167,11 @@ exports.UserManager.prototype.newDealer = function(){
 	
 };
 
-exports.UserManager.prototype.addUser = function(userId){
+exports.UserManager.prototype.addUser = function(userId, sessionId){
 
 	sys.log("Adding user: " + userId);
 	
-	this.users[userId] = new exports.User(userId);
+	this.users[userId] = new exports.User(userId, sessionId);
 	
 	return this.users[userId];
 };
@@ -180,6 +193,18 @@ exports.UserManager.prototype.get = function(userId){
 		
 	return this.users[userId];
 };
+
+exports.UserManager.prototype.getBySessionId = function(sessionId){
+	
+	for (userId in this.users) {
+		var user = this.get(userId); 
+		if (user.sessionId == sessionId) {
+			return user;
+		}
+	}
+	
+	return false;
+}
 
 exports.UserManager.prototype.checkGroupStatus = function(status){
 	sys.log("Checking users are all in state: " + status);
@@ -212,4 +237,28 @@ exports.UserManager.prototype.count = function(){
 	}
 	
 	return count;
+}
+
+exports.UserManager.prototype.getInactive = function(){
+	
+	sys.log("Finding inactive users...");
+	
+	var date = new Date(),
+		inactiveUserIds = [];
+	
+	for (userId in this.users) {
+		
+		var timeInactive = date - this.get(userId).lastActive();
+		
+		sys.log("User inactive for: " + timeInactive/1000 + " secs");
+	
+		if (timeInactive > 30 * 1000) {
+			
+			sys.log("Inactive user: " + userId);
+			inactiveUserIds.push(userId);
+			
+		}
+	}
+	
+	return inactiveUserIds;
 }
