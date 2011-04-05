@@ -1,5 +1,12 @@
-var socket = new io.Socket("0.0.0.0", {"reconnect": false});
 
+var host = window.location.hostname;
+var socket = new io.Socket(host, {"reconnect": false});
+
+
+socket.on('disconnect', function(){
+	log("disconnected");
+});
+	
 var states = {},
 	currentState = "";
 	
@@ -21,7 +28,7 @@ var changeState = function(state, message){
 		try {
 			states[currentState]._end();
 		} catch (err){
-			log("End failed for state: "+currentState);
+			log("End failed for state: " + currentState);
 		}
 	}
 	
@@ -42,7 +49,7 @@ var changeState = function(state, message){
 		log("state not found: " + state);
 	}
 	
-}
+};
 
 states.common = {
 
@@ -50,7 +57,7 @@ states.common = {
 		log("initialising room...");
 		
 		var users = message.users;
-		for (userId in users)
+		for (var userId in users)
 			userManager.addUser(users[userId]);
 			
 		var selfUser = userManager.get(selfId);
@@ -77,8 +84,13 @@ states.common = {
 		state = message.state;
 		
 		changeState(state, message);
+	},
+	"timeout": function(message){
+		$('#message').text("Sorry - you've been disconnected as you weren't playing. You can join in again whenever you're ready.")
+					 .show();
+		changeState("login");
 	}
-}
+};
 
 states.lobby = {
 	"_init" : function(message){
@@ -90,7 +102,7 @@ states.lobby = {
 	
 	"_end" : function(message){
 		$('#lobby').hide();
-	},
+	}
 };
 
 states.chooseLetters = {
@@ -181,7 +193,7 @@ states.login = {
 		log("initialising room...");
 		
 		var users = message.users;
-		for (userId in users)
+		for (var userId in users)
 			userManager.addUser(users[userId]);
 			
 		var selfUser = userManager.get(selfId);
@@ -195,9 +207,8 @@ states.login = {
 		log("Got Id");
 		selfId = message.userId;
 		window.localStorage.setItem('userId', message.userId);
-	},
+	}
 };
-
 	
 var addTile = function(letter){
 	
@@ -213,7 +224,7 @@ var addTile = function(letter){
 	
 	$newTile.animate({'opacity':1});
 	a.animate({'top':-5});
-}
+};
 
 var pickTile = function(type){
 	
@@ -236,7 +247,7 @@ var pickTile = function(type){
 	
 	socket.send(JSON.stringify({'action':'chooseLetter', 'type':type}));
 		
-}
+};
 	
 incrementClock = function(){
 	$('#clock').text(parseInt($('#clock').text()) -1); 
@@ -247,7 +258,7 @@ incrementClock = function(){
 		socket.send(JSON.stringify({'action':'submitWord', 'word' : word}));
 		
 	}
-}
+};
 
 function log(data){
   console.log(data);
@@ -260,7 +271,7 @@ socket.on('message', function(data){
 	try {
 		var message = JSON.parse(data);
 	} catch(err) {
-		log("The message was not valid JSON")
+		log("The message was not valid JSON");
 	}
 	
 	if (currentState != "" && states[currentState][message.action]){
@@ -281,7 +292,7 @@ socket.on('message', function(data){
 	
 });
 	
-documentReady = function(){
+var documentReady = function(){
 	
 	$tile = $('#tileTemplate').remove().removeAttr('id').removeClass('template').show();
 
@@ -310,9 +321,15 @@ documentReady = function(){
 		e.preventDefault();
 		
 		var newName = $('#inp_changeName').val();
-	  	socket.send(JSON.stringify({'action':'changeName','name': newName}));
 		
-		$('#selfName').text(newName);
+		if (newName != "") {
+			socket.send(JSON.stringify({
+				'action': 	'changeName',
+				'name': 	newName
+			}));
+			
+			$('#selfName').text(newName);
+		}
 		
 		$('#displaySelfName').show();
 		$('#editSelfName').hide();
@@ -362,4 +379,4 @@ documentReady = function(){
 	
 	socket.connect();
 
-}
+};

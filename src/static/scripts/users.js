@@ -23,7 +23,7 @@ userManager.updateUsers = function(users){
 	for (var id in users){
 		userManager.get(id).update(users[id]);
 	}
-}
+};
 
 userManager.get = function(userId){
 	return this.users[userId];
@@ -41,7 +41,7 @@ User = function(user){
 
 User.prototype.update = function(user){
 
-	for (property in user){
+	for (var property in user){
 		this[property] = user[property];
 	}
 	
@@ -50,15 +50,15 @@ User.prototype.update = function(user){
 	this.$el.find('.scoreChange').text(this.scoreChange());
 	this.$el.find('.score').text(this.score());
 	
-	if (this.userId == selfId)
+	if (this.userId === selfId)
 		$('#selfName').text(this.name());
 		
 	return this;
-}
+};
 
 User.prototype.scoreChange = function(scoreChange){
 
-	if (scoreChange == null)
+	if (scoreChange === undefined)
 		return this._scoreChange;
 		
 	this._scoreChange = scoreChange;
@@ -66,7 +66,7 @@ User.prototype.scoreChange = function(scoreChange){
 	
 	return this;
 	
-}
+};
 
 User.prototype.name = function(name){
 
@@ -76,24 +76,24 @@ User.prototype.name = function(name){
 	this._name = name;
 		
 	return this;
-}
+};
 
 User.prototype.score = function(score){
 
-	if (score == null)
+	if (score === undefined)
 		return this._score;
 		
 	this._score = score;
 		
 	return this;
-}
+};
 
 User.prototype.word = function(word){
 
-	if (word == null)
+	if (word === undefined)
 		return this._word;
 		
 	this._word = word;
 		
 	return this;
-}
+};
