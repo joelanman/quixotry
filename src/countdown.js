@@ -78,12 +78,14 @@ var httpServer = http.createServer(function(request, response) {
 // socket.io 
 var socket = io.listen(httpServer); 
 
-var channelManager = new users.channelManager();
+var channelManager = new users.ChannelManager();
 var User = users.User;
 
 channelManager.addChannel("login");
 channelManager.addChannel("active");
 channelManager.addChannel("inactive");
+
+var channels = channelManager.channels;
 
 var currentState = "";
 	
@@ -116,7 +118,7 @@ states.common = {
 		
 		user.name(newName);
 		
-		channelManager.channels.active.broadcast(JSONstring.make({
+		channels.active.broadcast(JSONstring.make({
 			"action": "changeName",
 			"name":    newName,
 			"userId":  user.userId
@@ -127,7 +129,6 @@ states.common = {
 		quicklog("error from the client");
 	},
 	
-		
 	"joinRoom" : function(client, msg){
 				
 		try{ // user exists
@@ -164,19 +165,19 @@ states.common = {
 			}
 		}
 		
-		channelManager.channels.login.unSubscribe(client);
-		channelManager.channels.active.subscribe(client);
+		channels.login.remove(client);
+		channels.active.add(client);
 		
 		client.send(JSONstring.make({
 			"action":	"initRoom",
 			"state":	currentState,
-			"users":	channelManager.channels.active.users(),
-			"dealerId": channelManager.channels.active.dealer(),
+			"users":	channels.active.users(),
+			"dealerId": channels.active.dealer(),
 			"letters":	round.letters,
 			"time":		round.time
 		}));
 									  
-		channelManager.channels.active.broadcast(JSONstring.make({"action":"addUser", "user":user}));
+		channels.active.broadcast(JSONstring.make({"action":"addUser", "user":user}));
 	},
 	
 };
@@ -187,24 +188,26 @@ states.lobby = {
 		
 		quicklog("states.lobby._init");
 		
-		channelManager.channels.active.broadcast(JSONstring.make({action:"state", state:"lobby", users:channelManager.users}));
+		channels.active.broadcast(JSONstring.make({action:"state",
+												   state:"lobby",
+												   users:channels.active.users()}));
 		
-		var inactiveUsers = channelManager.channels.active.getInactive();
+		var inactiveClients = channels.active.getInactive();
 		
-		for (var i = 0; i < inactiveUsers.length; i++){
+		for (var i = 0; i < inactiveClients.length; i++){
 						
-			var user = inactiveUsers[i];
+			var client = inactiveClients[i];
 		
-			channelManager.channels.active.removeUser(user);
-			channelManager.channels.inactive.addUser(user);
+			channels.active.remove(client);
+			channels.inactive.add(client);
 			
-			user.client.send(JSONstring.make({'action':'timeout'}));
+			client.send(JSONstring.make({'action':'timeout'}));
 		
 		}
 		
 		var startGame = function(){
 	
-			if (channelManager.channels.active.count() == 0) {
+			if (channels.active.count() == 0) {
 				
 				sys.log("No players - waiting...");
 				
@@ -237,10 +240,10 @@ states.chooseLetters = {
 		var msgOut = JSONstring.make({
 			"action": "state",
 			"state": "chooseLetters",
-			"dealerId": channelManager.channels.active.newDealer()
+			"dealerId": channels.active.newDealer()
 		});
 		
-		channelManager.channels.active.broadcast(msgOut);
+		channels.active.broadcast(msgOut);
 		
 		dealerDead = function(){
 		
@@ -284,7 +287,7 @@ states.chooseLetters = {
 				"letters": letters
 			});
 			
-			channelManager.channels.active.broadcast(msgOut);
+			channels.active.broadcast(msgOut);
 						
 			changeState("game");
 			
@@ -322,7 +325,7 @@ states.chooseLetters = {
 		
 		quicklog("Add tile: " + letter);
 		
-		channelManager.channels.active.broadcast(JSONstring.make({'action':'addTile', 'letter':letter}));
+		channels.active.broadcast(JSONstring.make({'action':'addTile', 'letter':letter}));
 			
 		if (round.letters.length == 8) {
 			
@@ -338,11 +341,11 @@ states.game = {
 	
 	"_init" :  function(){
 		
-		channelManager.setchannelstatus("game");
+		channels.active.setUserStatus("game");
 		
 		round.time = 30;
 		
-		channelManager.channels.active.broadcast(JSONstring.make({'action': 	'state',
+		channels.active.broadcast(JSONstring.make({'action': 	'state',
 										 'state': 	'game',
 										 'time': 	round.time}));
 		
@@ -366,7 +369,7 @@ states.game = {
 		
 		quicklog(" submitted: " + msg.word);
 		
-		var user = channelManager.getBySessionId(client.sessionId),
+		var user = client.user,
 			word = msg.word;
 			
 		if (word.length > 0){
@@ -390,9 +393,7 @@ states.game = {
 		
 		user.status("submittedWord");
 		
-		if (channelManager.checkchannelstatus("submittedWord")) {
-			
-			// end the round
+		if (channels.active.checkUserStatus("submittedWord")) {
 						
 			changeState('endRound');
 			
@@ -431,7 +432,7 @@ states.endRound = {
 		
 		quicklog("states.endRound._init");
 		
-		var averageWordLength = round.totalWordLength/channelManager.count();
+		var averageWordLength = round.totalWordLength/channels.active.count();
 			
 		quicklog("Average word length: " + averageWordLength);
 		
@@ -480,7 +481,7 @@ socket.on('connection', function(client){
 	
 	quicklog('Client connected');
 	
-	channelManager.channels.login.subscribe(client);
+	channels.login.add(client);
 
 	client.on('message', function(msg){
 		
@@ -515,17 +516,20 @@ socket.on('connection', function(client){
   client.on('disconnect', function(){
   	quicklog('Client disconnected');
 	
-	var user = channelManager.getBySessionId(client.sessionId);
+	// to do: unsubscribe from all channels and broadcast disconnection event
+	
+	/*
+	var user = client.user;
 	
 	if (user){
 		
 		var userId = user.userId;
 	
-	  	channelManager.channels.active.broadcast(JSONstring.make({"action":"closed", "userId":userId}));
+	  	channels.active.broadcast(JSONstring.make({"action":"closed", "userId":client.user.id}));
 	  
 	  	channelManager.removeUser(userId);
 
-	}
+	}*/
   }) 
 });
 

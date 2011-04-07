@@ -107,13 +107,13 @@ var Channel = function(name){
 	
 };
 
-Channel.prototype.subscribe = function(client){
+Channel.prototype.add = function(client){
 	
 	this.clients[client.sessionId] = client;
 	
 }
 
-Channel.prototype.unSubscribe = function(client){
+Channel.prototype.remove = function(client){
 	
 	delete this.clients[client.sessionId];
 	
@@ -144,9 +144,7 @@ Channel.prototype.users = function(){
 Channel.prototype.dealer = function(userId){
 
 	if (userId == null) {
-	
 		return this._dealerId;
-		
 	}
 	
 	this._dealerId = userId;
@@ -161,10 +159,10 @@ Channel.prototype.newDealer = function(){
 		
 		sys.log("no dealer, selecting first user")
 		
-		for (userId in this.clients) {
-			this._dealerId = userId;
+		for (id in this.clients) {
+			this._dealerId = this.clients[id].user.id;
 			
-			sys.log("dealer: "+this._dealerId)
+			sys.log("dealer: " + this._dealerId)
 			
 			return this._dealerId;
 			break;
@@ -176,12 +174,13 @@ Channel.prototype.newDealer = function(){
 	
 		sys.log("getting user after current dealer...")
 		
-		for (userId in this.clients) {
-			if (userId == this._dealerId){
+		for (id in this.clients) {
+			var user = this.clients[id].user;
+			if (user.id == this._dealerId){
 				dealerFound = true;
 			} else if (dealerFound)	{
 				sys.log("dealer: "+this._dealerId)
-				this._dealerId = userId;
+				this._dealerId = user.id;
 				return this._dealerId;
 				break;
 			}
@@ -198,10 +197,12 @@ Channel.prototype.newDealer = function(){
 	
 };
 
-Channel.prototype.checkchannelstatus = function(status){
-	sys.log("Checking clients are all in state: " + status);
-	for (userId in this.clients) {
-		if (this.get(userId).status() != status) {
+Channel.prototype.checkUserStatus = function(status){
+	
+	sys.log("Checking users are all in state: " + status);
+	
+	for (id in this.clients) {
+		if(this.clients[id].user.status() != status){
 			sys.log("User not in state: " + userId);
 			return false;
 		}
@@ -210,12 +211,12 @@ Channel.prototype.checkchannelstatus = function(status){
 	return true;
 }
 
-Channel.prototype.setclientstatus = function(status){
+Channel.prototype.setUserStatus = function(status){
 	
-	sys.log("Setting clients to state: " + status);
+	sys.log("Setting users to state: " + status);
 	
-	for (userId in this.clients) {
-		this.get(userId).status(status);
+	for (id in this.clients) {
+		this.clients[id].user.status(status);
 	}
 	
 }
@@ -236,23 +237,25 @@ Channel.prototype.getInactive = function(){
 	sys.log("Finding inactive clients...");
 	
 	var date = new Date(),
-		inactiveUserIds = [];
+		inactiveClients = [];
 	
-	for (userId in this.clients) {
+	for (id in this.clients) {
 		
-		var timeInactive = date - this.get(userId).lastActive();
+		var user = this.clients[id].user;
+		
+		var timeInactive = date - user.lastActive();
 		
 		sys.log("User inactive for: " + timeInactive/1000 + " secs");
 	
 		if (timeInactive > 30 * 1000) {
 			
-			sys.log("Inactive user: " + userId);
-			inactiveUserIds.push(userId);
+			sys.log("Inactive user: " + user.name());
+			inactiveClients.push(this.clients[id]);
 			
 		}
 	}
 	
-	return inactiveUserIds;
+	return inactiveClients;
 }
 
 
@@ -287,5 +290,5 @@ ChannelManager.prototype.getBySessionId = function(sessionId){
 	return (user) ? user : false;
 }
 
-exports.channelManager = ChannelManager;
+exports.ChannelManager = ChannelManager;
 exports.User = User;
