@@ -1,27 +1,19 @@
 var sys = require("sys");
-/*
- * User
- * UserManager
- * Room
- * RoomManager
- */
 
-exports.User = function(userId, sessionId){
+User = function(id){
 	
-	this.userId    = userId;
-	this.sessionId = sessionId;
-	this._name 	   = userId;
-	this._status   = "lobby";
-	this._roomId   = null;
-	this._isDealer = false;
-	this._score    = 0;
+	this.id    		= id;
+	this._name 	   	= "";
+	this._status   	= "login";
+	this._isDealer 	= false;
+	this._score    	= 0;
 	this._scoreChange = 0;
-	this._word 	   = "";
-	this._validWord = true;
+	this._word 	   	= "";
+	this._validWord = false;
 	this._lastActive = new Date();
 };
 
-exports.User.prototype.status = function(status){
+User.prototype.status = function(status){
 
 	if (status == null)
 		return this._status;
@@ -32,7 +24,8 @@ exports.User.prototype.status = function(status){
 	
 }
 
-exports.User.prototype.scoreChange = function(scoreChange){
+
+User.prototype.scoreChange = function(scoreChange){
 
 	if (scoreChange == null)
 		return this._scoreChange;
@@ -44,7 +37,7 @@ exports.User.prototype.scoreChange = function(scoreChange){
 	
 }
 
-exports.User.prototype.score = function(score){
+User.prototype.score = function(score){
 
 	if (score == null)
 		return this._score;
@@ -54,7 +47,7 @@ exports.User.prototype.score = function(score){
 	return this;
 }
 
-exports.User.prototype.name = function(name){
+User.prototype.name = function(name){
 
 	if (name == null)
 		return this._name;
@@ -64,7 +57,7 @@ exports.User.prototype.name = function(name){
 	return this;
 }
 
-exports.User.prototype.word = function(word){
+User.prototype.word = function(word){
 
 	if (word == null)
 		return this._word;
@@ -74,7 +67,7 @@ exports.User.prototype.word = function(word){
 	return this;
 }
 
-exports.User.prototype.validWord = function(isValid){
+User.prototype.validWord = function(isValid){
 
 	if (isValid == null)
 		return this._validWord;
@@ -84,7 +77,7 @@ exports.User.prototype.validWord = function(isValid){
 	return this;
 }
 
-exports.User.prototype.dealer = function(isDealer){
+User.prototype.dealer = function(isDealer){
 
 	if (isDealer == null)
 		return this._isDealer;
@@ -94,7 +87,7 @@ exports.User.prototype.dealer = function(isDealer){
 	return this;
 }
 
-exports.User.prototype.lastActive = function(date){
+User.prototype.lastActive = function(date){
 
 	if (date == null)
 		return this._lastActive;
@@ -105,12 +98,50 @@ exports.User.prototype.lastActive = function(date){
 	
 }
 
-exports.UserManager = function(){
-	this.users = {};
-	this._dealerId = -1;
+var Channel = function(name){
+	
+	this.name = name;
+	this.clients = {};
+	
+	this._dealerId 	= -1;
+	
 };
 
-exports.UserManager.prototype.dealer = function(userId){
+Channel.prototype.subscribe = function(client){
+	
+	this.clients[client.sessionId] = client;
+	
+}
+
+Channel.prototype.unSubscribe = function(client){
+	
+	delete this.clients[client.sessionId];
+	
+}
+
+Channel.prototype.broadcast = function(message, except){
+	
+	for (var id in this.clients){
+		if (id != except)
+			this.clients[id].send(message);
+	}
+	
+}
+
+Channel.prototype.users = function(){
+	
+	var users = {};
+	
+	for (var id in this.clients){
+		var user = this.clients[id].user;
+		users[user.id] = user;
+	}
+	
+	return users;
+	
+}
+
+Channel.prototype.dealer = function(userId){
 
 	if (userId == null) {
 	
@@ -124,13 +155,13 @@ exports.UserManager.prototype.dealer = function(userId){
 	
 };
 
-exports.UserManager.prototype.newDealer = function(){
+Channel.prototype.newDealer = function(){
 
 	if (this._dealerId == -1) {
 		
 		sys.log("no dealer, selecting first user")
 		
-		for (userId in this.users) {
+		for (userId in this.clients) {
 			this._dealerId = userId;
 			
 			sys.log("dealer: "+this._dealerId)
@@ -145,7 +176,7 @@ exports.UserManager.prototype.newDealer = function(){
 	
 		sys.log("getting user after current dealer...")
 		
-		for (userId in this.users) {
+		for (userId in this.clients) {
 			if (userId == this._dealerId){
 				dealerFound = true;
 			} else if (dealerFound)	{
@@ -167,48 +198,9 @@ exports.UserManager.prototype.newDealer = function(){
 	
 };
 
-exports.UserManager.prototype.addUser = function(userId, sessionId){
-
-	sys.log("Adding user: " + userId);
-	
-	this.users[userId] = new exports.User(userId, sessionId);
-	
-	return this.users[userId];
-};
-
-exports.UserManager.prototype.removeUser = function(userId){
-
-	sys.log("Removing user: " + userId);
-	
-	var user = this.users[userId];
-		
-	delete this.users[userId];
-};
-
-exports.UserManager.prototype.get = function(userId){
-	sys.log("getting user " + userId) + ": " + this.users[userId];
-	
-	if (!this.users[userId])
-		throw("user not found");
-		
-	return this.users[userId];
-};
-
-exports.UserManager.prototype.getBySessionId = function(sessionId){
-	
-	for (userId in this.users) {
-		var user = this.get(userId); 
-		if (user.sessionId == sessionId) {
-			return user;
-		}
-	}
-	
-	return false;
-}
-
-exports.UserManager.prototype.checkGroupStatus = function(status){
-	sys.log("Checking users are all in state: " + status);
-	for (userId in this.users) {
+Channel.prototype.checkchannelstatus = function(status){
+	sys.log("Checking clients are all in state: " + status);
+	for (userId in this.clients) {
 		if (this.get(userId).status() != status) {
 			sys.log("User not in state: " + userId);
 			return false;
@@ -218,35 +210,35 @@ exports.UserManager.prototype.checkGroupStatus = function(status){
 	return true;
 }
 
-exports.UserManager.prototype.setGroupStatus = function(status){
+Channel.prototype.setclientstatus = function(status){
 	
-	sys.log("Setting users to state: " + status);
+	sys.log("Setting clients to state: " + status);
 	
-	for (userId in this.users) {
+	for (userId in this.clients) {
 		this.get(userId).status(status);
 	}
 	
 }
 
-exports.UserManager.prototype.count = function(){
+Channel.prototype.count = function(){
 	
 	var count = 0;
 	
-	for (userId in this.users) {
+	for (userId in this.clients) {
 		count++;
 	}
 	
 	return count;
 }
 
-exports.UserManager.prototype.getInactive = function(){
+Channel.prototype.getInactive = function(){
 	
-	sys.log("Finding inactive users...");
+	sys.log("Finding inactive clients...");
 	
 	var date = new Date(),
 		inactiveUserIds = [];
 	
-	for (userId in this.users) {
+	for (userId in this.clients) {
 		
 		var timeInactive = date - this.get(userId).lastActive();
 		
@@ -262,3 +254,38 @@ exports.UserManager.prototype.getInactive = function(){
 	
 	return inactiveUserIds;
 }
+
+
+
+ChannelManager = function(){
+	this.channels 	= {};
+	this.clients 	= {};
+};
+
+ChannelManager.prototype.addChannel = function(name){
+
+	this.channels[name] = new Channel(name);
+	
+};
+
+ChannelManager.prototype.get = function(userId){
+	sys.log("getting user " + userId) + ": " + this.clients[userId];
+
+	for (var sessionId in this.clients) {
+		var user = this.getBySessionId(sessionId); 
+		if (user.id == userId)
+			return user;
+	}
+	
+	return false;
+};
+
+ChannelManager.prototype.getBySessionId = function(sessionId){
+	
+	user = this.clients[sessionId];
+		
+	return (user) ? user : false;
+}
+
+exports.channelManager = ChannelManager;
+exports.User = User;

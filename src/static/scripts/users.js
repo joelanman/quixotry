@@ -4,19 +4,19 @@ var userManager = {
 
 userManager.addUser = function(user){
 
-	log("Adding user: " + user.userId);
+	log("Adding user: " + user.id);
 	
-	if (!this.users[user.userId])
-		this.users[user.userId] = new User(user);
+	if (!this.users[user.id])
+		this.users[user.id] = new User(user);
 };
 
-userManager.removeUser = function(userId){
+userManager.removeUser = function(id){
 	
-	log("Removing user: " + userId);
+	log("Removing user: " + id);
 	
-	$('#user_'+ userId).fadeOut();
+	$('#user_'+ id).fadeOut();
 	
-	delete this.users[userId];
+	delete this.users[id];
 };
 
 userManager.updateUsers = function(users){
@@ -25,14 +25,14 @@ userManager.updateUsers = function(users){
 	}
 };
 
-userManager.get = function(userId){
-	return this.users[userId];
+userManager.get = function(id){
+	return this.users[id];
 };
 
 User = function(user){
 		
 	this.$el = userManager.$userTemplate.clone();
-	this.$el.attr('id','user_'+ user.userId);
+	this.$el.attr('id','user_'+ user.id);
 	
 	this.update(user);
 	
@@ -50,7 +50,7 @@ User.prototype.update = function(user){
 	this.$el.find('.scoreChange').text(this.scoreChange());
 	this.$el.find('.score').text(this.score());
 	
-	if (this.userId === selfId)
+	if (this.id === selfId)
 		$('#selfName').text(this.name());
 		
 	return this;

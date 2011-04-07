@@ -3,12 +3,15 @@ var sys = require("sys"),
 	url = require("url"),
 	fs = require("fs"),
 	path = require("path"), 
+	
+    jsonStringify = require('./lib/jsonStringify'),
     io = require('socket.io'),
 	users = require('./lib/users'),
 	channels = require('./lib/channels'),
 	crypto = require('crypto');
-	
-  
+
+var JSONstring = jsonStringify.JSONstring;	
+
 function quicklog(s) {
 	var logpath = "/tmp/node.log";
 	s = s.toString().replace(/\r\n|\r/g, '\n'); // hack
@@ -35,11 +38,14 @@ var	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distribut
 	
 // set up servers (to do: take out http server)
 
-var httpServer = http.createServer(function(request, response) {  
+var httpServer = http.createServer(function(request, response) { 
+
     var uri = url.parse(request.url).pathname; 
 	
-	uri = (uri == "" || uri =="/") ? "index.html" : uri;
+	uri = (uri == "" || uri == "/") ? "index.html" : uri;
+	
     var filename = path.join(process.cwd(), 'static/' + uri);  
+	
     path.exists(filename, function(exists) {  
         if(!exists) {  
             response.writeHead(404, {"Content-Type": "text/plain"});  
@@ -72,9 +78,8 @@ var httpServer = http.createServer(function(request, response) {
 // socket.io 
 var socket = io.listen(httpServer); 
 
-var userManager = new users.UserManager();
-
-var channelManager = new channels.ChannelManager(socket);
+var channelManager = new users.channelManager();
+var User = users.User;
 
 channelManager.addChannel("login");
 channelManager.addChannel("active");
@@ -101,26 +106,78 @@ var states = {};
 
 states.common = {
 
-	"changeName" : function(msg){
+	"changeName" : function(client, msg){
 		
 		var newName = msg.name;
 					
-		var user = userManager.getBySessionId(msg.client.sessionId);
+		var user = client.user;
 		
-		quicklog(msg.client.sessionId + ": Name change: '" + user.name() + "' to '" + newName +"'");
+		quicklog(client.sessionId + ": Name change: '" + user.name() + "' to '" + newName +"'");
 		
 		user.name(newName);
 		
-		channelManager.channels.active.broadcast(JSON.stringify({
+		channelManager.channels.active.broadcast(JSONstring.make({
 			"action": "changeName",
 			"name":    newName,
 			"userId":  user.userId
 		}));
 	},
 	
-	"error" : function(msg){
+	"error" : function(client, msg){
 		quicklog("error from the client");
-	}
+	},
+	
+		
+	"joinRoom" : function(client, msg){
+				
+		try{ // user exists
+			
+			// to do: get existing user from storage
+			
+			throw("no storage yet");
+			
+		} catch(err) {
+						
+			if (msg.name) { // user log in
+			
+				var identifier = new Date().toString() + client.sessionId;
+				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
+				
+				var user = new User(userId);
+				
+				client.user = user;
+				
+				user.name(msg.name);
+				
+				client.send(JSONstring.make({
+					"action": "yourId",
+					"userId": userId
+				}));
+				
+			} else { // user needs to log in
+			
+				client.send(JSONstring.make({
+					"action": "state",
+					"state":  "login"
+				}));
+				return;
+			}
+		}
+		
+		channelManager.channels.login.unSubscribe(client);
+		channelManager.channels.active.subscribe(client);
+		
+		client.send(JSONstring.make({
+			"action":	"initRoom",
+			"state":	currentState,
+			"users":	channelManager.channels.active.users(),
+			"dealerId": channelManager.channels.active.dealer(),
+			"letters":	round.letters,
+			"time":		round.time
+		}));
+									  
+		channelManager.channels.active.broadcast(JSONstring.make({"action":"addUser", "user":user}));
+	},
 	
 };
 
@@ -130,26 +187,24 @@ states.lobby = {
 		
 		quicklog("states.lobby._init");
 		
-		channelManager.channels.active.broadcast(JSON.stringify({action:"state", state:"lobby", users:userManager.users}));
+		channelManager.channels.active.broadcast(JSONstring.make({action:"state", state:"lobby", users:channelManager.users}));
 		
-		var inactiveUserIds = userManager.getInactive();
+		var inactiveUsers = channelManager.channels.active.getInactive();
 		
-		for (var i = 0; i < inactiveUserIds.length; i++){
-			
-			var userId = inactiveUserIds[i];
-			
-			var user = userManager.get(userId);
+		for (var i = 0; i < inactiveUsers.length; i++){
+						
+			var user = inactiveUsers[i];
 		
-			channelManager.channels.active.unSubscribe(user.sessionId);
-			channelManager.channels.inactive.subscribe(user.sessionId);
+			channelManager.channels.active.removeUser(user);
+			channelManager.channels.inactive.addUser(user);
 			
-			socket.clients[user.sessionId].send(JSON.stringify({'action':'timeout'}));
+			user.client.send(JSONstring.make({'action':'timeout'}));
 		
 		}
 		
 		var startGame = function(){
 	
-			if (userManager.count() == 0) {
+			if (channelManager.channels.active.count() == 0) {
 				
 				sys.log("No players - waiting...");
 				
@@ -170,50 +225,6 @@ states.lobby = {
 		
 		initRound();
 		
-	},
-	
-	"joinRoom" : function(msg){
-				
-		try{ // user exists
-			
-			var user = userManager.get(msg.userId);
-			
-		} catch(err) {
-			
-			if (msg.name) { // user log in
-				var identifier = new Date().toString() + msg.client.sessionId;
-				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
-				var user = userManager.addUser(userId, msg.client.sessionId);
-				
-				user.name(msg.name);
-				
-				msg.client.send(JSON.stringify({
-					"action": "yourId",
-					"userId": userId
-				}));
-				
-			} else { // id didn't exist - user needs to log in
-			
-				msg.client.send(JSON.stringify({
-					"action": "state",
-					"state":  "login"
-				}));
-				return;
-			}
-		}
-		
-		channelManager.channels.login.unSubscribe(msg.client.sessionId);
-		channelManager.channels.active.subscribe(msg.client.sessionId);
-		
-		quicklog("User joined: " + msg.client.sessionId);
-					
-		msg.client.send(JSON.stringify({"action":	"initRoom",
-									  	"state":	currentState,
-									  	"users":	userManager.users,
-									  	"letters": 	round.letters}));
-									  
-		channelManager.channels.active.broadcast(JSON.stringify({"action":"addUser", "user":user}),
-												 msg.client.sessionId);
 	}
 };
 
@@ -223,10 +234,10 @@ states.chooseLetters = {
 		
 		quicklog("Starting game");
 		
-		var msgOut = JSON.stringify({
+		var msgOut = JSONstring.make({
 			"action": "state",
 			"state": "chooseLetters",
-			"dealerId": userManager.newDealer()
+			"dealerId": channelManager.channels.active.newDealer()
 		});
 		
 		channelManager.channels.active.broadcast(msgOut);
@@ -268,7 +279,7 @@ states.chooseLetters = {
 			
 			round.letters += letters;
 			
-			var msgOut = JSON.stringify({
+			var msgOut = JSONstring.make({
 				"action": "dealerDead",
 				"letters": letters
 			});
@@ -281,55 +292,8 @@ states.chooseLetters = {
 		
 		dealerDeadTimeout = setTimeout(dealerDead, 8 * 1000);
 	},
-		
-	"joinRoom" : function(msg){
-				
-		try{ // user exists
-			
-			var user = userManager.get(msg.userId);
-			
-		} catch(err) {
-			
-			if (msg.name) { // user log in
-				var identifier = new Date().toString() + msg.client.sessionId;
-				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
-				var user = userManager.addUser(userId, msg.client.sessionId);
-				
-				user.name(msg.name);
-				
-				msg.client.send(JSON.stringify({
-					"action": "yourId",
-					"userId": userId
-				}));
-				
-			} else { // user needs to log in
-				msg.client.send(JSON.stringify({
-					"action": "state",
-					"state":  "login"
-				}));
-				return;
-			}
-		}
-		
-		channelManager.channels.login.unSubscribe(msg.client.sessionId);
-		channelManager.channels.active.subscribe(msg.client.sessionId);
-		
-		quicklog("User joined: " + msg.client.sessionId);
-					
-		msg.client.send(JSON.stringify({
-			"action":	"initRoom",
-			"state":	currentState,
-			"users":	userManager.users,
-			"dealerId": userManager.dealer(),
-			"letters":	round.letters,
-			"time":		round.time
-		}));
-									  
-		channelManager.channels.active.broadcast(JSON.stringify({"action":"addUser", "user":user}),
-												 msg.client.sessionId);
-	},
 	
-	"chooseLetter" : function(msg){
+	"chooseLetter" : function(client, msg){
 		
 		clearTimeout(dealerDeadTimeout);
 		dealerDeadTimeout = setTimeout(dealerDead, 8 * 1000);
@@ -358,7 +322,7 @@ states.chooseLetters = {
 		
 		quicklog("Add tile: " + letter);
 		
-		channelManager.channels.active.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
+		channelManager.channels.active.broadcast(JSONstring.make({'action':'addTile', 'letter':letter}));
 			
 		if (round.letters.length == 8) {
 			
@@ -374,11 +338,11 @@ states.game = {
 	
 	"_init" :  function(){
 		
-		userManager.setGroupStatus("game");
+		channelManager.setchannelstatus("game");
 		
 		round.time = 30;
 		
-		channelManager.channels.active.broadcast(JSON.stringify({'action': 	'state',
+		channelManager.channels.active.broadcast(JSONstring.make({'action': 	'state',
 										 'state': 	'game',
 										 'time': 	round.time}));
 		
@@ -397,57 +361,12 @@ states.game = {
 		countdownInterval = setInterval(countdown, 1000);
 		
 	},
-		
-	"joinRoom" : function(msg){
-				
-		try{ // user exists
 			
-			var user = userManager.get(msg.userId);
-			
-		} catch(err) {
-						
-			if (msg.name) { // user log in
-			
-				var identifier = new Date().toString() + msg.client.sessionId;
-				var userId = crypto.createHash('sha1').update(identifier).digest('hex');
-				var user = userManager.addUser(userId, msg.client.sessionId);
-				
-				user.name(msg.name);
-				
-				msg.client.send(JSON.stringify({
-					"action": "yourId",
-					"userId": userId
-				}));
-				
-			} else { // user needs to log in
-			
-				msg.client.send(JSON.stringify({
-					"action": "state",
-					"state":  "login"
-				}));
-				return;
-			}
-		}
-		
-		channelManager.channels.login.unSubscribe(msg.client.sessionId);
-		channelManager.channels.active.subscribe(msg.client.sessionId);
-		
-		msg.client.send(JSON.stringify({
-			"action":	"initRoom",
-			"state":	currentState,
-			"users":	userManager.users,
-			"letters":	round.letters,
-			"time":		round.time
-		}));
-									  
-		channelManager.channels.active.broadcast(JSON.stringify({"action":"addUser", "user":user}));
-	},
-			
-	"submitWord" : function(msg){
+	"submitWord" : function(client, msg){
 		
 		quicklog(" submitted: " + msg.word);
 		
-		var user = userManager.getBySessionId(msg.client.sessionId),
+		var user = channelManager.getBySessionId(client.sessionId),
 			word = msg.word;
 			
 		if (word.length > 0){
@@ -471,7 +390,7 @@ states.game = {
 		
 		user.status("submittedWord");
 		
-		if (userManager.checkGroupStatus("submittedWord")) {
+		if (channelManager.checkchannelstatus("submittedWord")) {
 			
 			// end the round
 						
@@ -512,7 +431,7 @@ states.endRound = {
 		
 		quicklog("states.endRound._init");
 		
-		var averageWordLength = round.totalWordLength/userManager.count();
+		var averageWordLength = round.totalWordLength/channelManager.count();
 			
 		quicklog("Average word length: " + averageWordLength);
 		
@@ -551,6 +470,7 @@ var changeState = function(state){
 		
 	} else {
 		// error - state not found
+		quicklog("State doesn't exist: " + state );
 	}
 	
 }
@@ -560,7 +480,7 @@ socket.on('connection', function(client){
 	
 	quicklog('Client connected');
 	
-	channelManager.channels.login.subscribe(client.sessionId);
+	channelManager.channels.login.subscribe(client);
 
 	client.on('message', function(msg){
 		
@@ -577,14 +497,14 @@ socket.on('connection', function(client){
 		
 		if (states[currentState][msgObj.action]){ // current state
 			
-			states[currentState][msgObj.action](msgObj);
+			states[currentState][msgObj.action](client, msgObj);
 			
 		} else if (states.common[msgObj.action]){ // common events
 			
-			states.common[msgObj.action](msgObj);
+			states.common[msgObj.action](client, msgObj);
 			
 		} else {
-			client.send(JSON.stringify({
+			client.send(JSONstring.make({
 				action: "error",
 				message: "The message you sent was not valid in the current state: " + msg
 			}));	
@@ -595,15 +515,15 @@ socket.on('connection', function(client){
   client.on('disconnect', function(){
   	quicklog('Client disconnected');
 	
-	var user = userManager.getBySessionId(client.sessionId);
+	var user = channelManager.getBySessionId(client.sessionId);
 	
 	if (user){
 		
 		var userId = user.userId;
 	
-	  	channelManager.channels.active.broadcast(JSON.stringify({"action":"closed", "userId":userId}));
+	  	channelManager.channels.active.broadcast(JSONstring.make({"action":"closed", "userId":userId}));
 	  
-	  	userManager.removeUser(userId);
+	  	channelManager.removeUser(userId);
 
 	}
   }) 
