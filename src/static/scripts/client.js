@@ -17,7 +17,6 @@ var round = {
 	}
 };
 
-
 var selfId = window.localStorage.getItem('userId');
 
 var changeState = function(state, message){
@@ -76,8 +75,8 @@ states.common = {
 		$('#user_'+message.userId).find('.name').text(message.name);
 	},
 	"closed" : function(message){
-		log("User left room");
-		userManager.removeUser(message.userId);
+		log("Users left room");
+		userManager.removeUsers(message.users);
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);

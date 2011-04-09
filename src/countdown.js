@@ -4,13 +4,10 @@ var sys = require("sys"),
 	fs = require("fs"),
 	path = require("path"), 
 	
-    jsonStringify = require('./lib/jsonStringify'),
     io = require('socket.io'),
 	users = require('./lib/users'),
 	channels = require('./lib/channels'),
 	crypto = require('crypto');
-
-var JSONstring = jsonStringify.JSONstring;	
 
 function quicklog(s) {
 	var logpath = "/tmp/node.log";
@@ -118,7 +115,7 @@ states.common = {
 		
 		user.name(newName);
 		
-		channels.active.broadcast(JSONstring.make({
+		channels.active.broadcast(JSON.stringify({
 			"action": "changeName",
 			"name":    newName,
 			"userId":  user.userId
@@ -150,14 +147,14 @@ states.common = {
 				
 				user.name(msg.name);
 				
-				client.send(JSONstring.make({
+				client.send(JSON.stringify({
 					"action": "yourId",
 					"userId": userId
 				}));
 				
 			} else { // user needs to log in
 			
-				client.send(JSONstring.make({
+				client.send(JSON.stringify({
 					"action": "state",
 					"state":  "login"
 				}));
@@ -168,7 +165,7 @@ states.common = {
 		channels.login.remove(client);
 		channels.active.add(client);
 		
-		client.send(JSONstring.make({
+		client.send(JSON.stringify({
 			"action":	"initRoom",
 			"state":	currentState,
 			"users":	channels.active.users(),
@@ -177,7 +174,7 @@ states.common = {
 			"time":		round.time
 		}));
 									  
-		channels.active.broadcast(JSONstring.make({"action":"addUser", "user":user}));
+		channels.active.broadcast(JSON.stringify({"action":"addUser", "user":user}));
 	},
 	
 };
@@ -188,22 +185,38 @@ states.lobby = {
 		
 		quicklog("states.lobby._init");
 		
-		channels.active.broadcast(JSONstring.make({action:"state",
-												   state:"lobby",
-												   users:channels.active.users()}));
+		// cull inactive users
 		
 		var inactiveClients = channels.active.getInactive();
 		
-		for (var i = 0; i < inactiveClients.length; i++){
-						
-			var client = inactiveClients[i];
 		
-			channels.active.remove(client);
-			channels.inactive.add(client);
+		if (inactiveClients.length){
 			
-			client.send(JSONstring.make({'action':'timeout'}));
-		
+			var inactiveUserIds = [];
+			
+			for (var i = 0; i < inactiveClients.length; i++){
+							
+				var client = inactiveClients[i];
+			
+				channels.active.remove(client);
+				channels.inactive.add(client);
+				
+				client.send(JSON.stringify({'action':'timeout'}));
+				
+				inactiveUserIds.push(client.user.id);
+			
+			}
+			
+			channels.active.broadcast(JSON.stringify({
+				action: "closed",
+				users: inactiveUserIds
+			}));
+			
 		}
+												   					   
+		channels.active.broadcast(JSON.stringify({action: "state",
+												   state: "lobby",
+												   users: channels.active.users()}));
 		
 		var startGame = function(){
 	
@@ -237,7 +250,7 @@ states.chooseLetters = {
 		
 		quicklog("Starting game");
 		
-		var msgOut = JSONstring.make({
+		var msgOut = JSON.stringify({
 			"action": "state",
 			"state": "chooseLetters",
 			"dealerId": channels.active.newDealer()
@@ -282,7 +295,7 @@ states.chooseLetters = {
 			
 			round.letters += letters;
 			
-			var msgOut = JSONstring.make({
+			var msgOut = JSON.stringify({
 				"action": "dealerDead",
 				"letters": letters
 			});
@@ -325,7 +338,7 @@ states.chooseLetters = {
 		
 		quicklog("Add tile: " + letter);
 		
-		channels.active.broadcast(JSONstring.make({'action':'addTile', 'letter':letter}));
+		channels.active.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
 			
 		if (round.letters.length == 8) {
 			
@@ -345,7 +358,7 @@ states.game = {
 		
 		round.time = 30;
 		
-		channels.active.broadcast(JSONstring.make({'action': 	'state',
+		channels.active.broadcast(JSON.stringify({'action': 	'state',
 										 'state': 	'game',
 										 'time': 	round.time}));
 		
@@ -481,6 +494,8 @@ socket.on('connection', function(client){
 	
 	quicklog('Client connected');
 	
+	channelManager.addClient(client);
+	
 	channels.login.add(client);
 
 	client.on('message', function(msg){
@@ -505,7 +520,7 @@ socket.on('connection', function(client){
 			states.common[msgObj.action](client, msgObj);
 			
 		} else {
-			client.send(JSONstring.make({
+			client.send(JSON.stringify({
 				action: "error",
 				message: "The message you sent was not valid in the current state: " + msg
 			}));	
@@ -514,22 +529,13 @@ socket.on('connection', function(client){
 	
 	
   client.on('disconnect', function(){
+  	
   	quicklog('Client disconnected');
 	
-	// to do: unsubscribe from all channels and broadcast disconnection event
+	channelManager.removeClient(client);
 	
-	/*
-	var user = client.user;
-	
-	if (user){
+	channels.active.broadcast(JSON.stringify({"action":"closed", "users":[client.user.id]}));
 		
-		var userId = user.userId;
-	
-	  	channels.active.broadcast(JSONstring.make({"action":"closed", "userId":client.user.id}));
-	  
-	  	channelManager.removeUser(userId);
-
-	}*/
   }) 
 });
 

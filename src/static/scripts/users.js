@@ -19,6 +19,13 @@ userManager.removeUser = function(id){
 	delete this.users[id];
 };
 
+userManager.removeUsers = function(ids){
+	
+	for (var i=0; i<ids.length; i++)
+		this.removeUser(ids[i]);
+		
+};
+
 userManager.updateUsers = function(users){
 	for (var id in users){
 		userManager.get(id).update(users[id]);
