@@ -9,7 +9,7 @@ User = function(id){
 	this._score    	= 0;
 	this._scoreChange = 0;
 	this._word 	   	= "";
-	this._validWord = false;
+	this._hasValidWord = false;
 	this._lastActive = new Date();
 };
 
@@ -67,12 +67,12 @@ User.prototype.word = function(word){
 	return this;
 }
 
-User.prototype.validWord = function(isValid){
+User.prototype.hasValidWord = function(isValid){
 
 	if (isValid == null)
-		return this._validWord;
+		return this._hasValidWord;
 		
-	this._validWord = isValid;
+	this._hasValidWord = isValid;
 		
 	return this;
 }
@@ -103,7 +103,7 @@ var Channel = function(name){
 	this.name = name;
 	this.clients = {};
 	
-	this._dealerId 	= -1;
+	this._dealer = null;
 	
 };
 
@@ -142,16 +142,27 @@ Channel.prototype.users = function(){
 	}
 	
 	return users;
-	
 }
 
-Channel.prototype.dealer = function(userId){
-
-	if (userId == null) {
-		return this._dealerId;
+Channel.prototype.usersToArray = function(){
+	
+	var users = [];
+	
+	for (var id in this.clients){
+		var user = this.clients[id].user;
+		users.push(user);
 	}
 	
-	this._dealerId = userId;
+	return users;
+}
+
+Channel.prototype.dealer = function(user){
+
+	if (user == null) {
+		return this._dealer;
+	}
+	
+	this._dealer = user;
 	
 	return this;
 	
@@ -159,16 +170,16 @@ Channel.prototype.dealer = function(userId){
 
 Channel.prototype.newDealer = function(){
 
-	if (this._dealerId == -1) {
+	if (this._dealer == null) {
 		
 		sys.log("no dealer, selecting first user")
 		
 		for (id in this.clients) {
-			this._dealerId = this.clients[id].user.id;
+			this._dealer = this.clients[id].user;
 			
-			sys.log("dealer: " + this._dealerId)
+			sys.log("dealer: " + this._dealer.name());
 			
-			return this._dealerId;
+			return this._dealer;
 			break;
 		}
 		
@@ -179,13 +190,19 @@ Channel.prototype.newDealer = function(){
 		sys.log("getting user after current dealer...")
 		
 		for (id in this.clients) {
+			
 			var user = this.clients[id].user;
-			if (user.id == this._dealerId){
+			
+			if (user == this._dealer){
+				
 				dealerFound = true;
+				
 			} else if (dealerFound)	{
-				sys.log("dealer: "+this._dealerId)
-				this._dealerId = user.id;
-				return this._dealerId;
+				
+				sys.log("dealer: " + this._dealer.name());
+			
+				this._dealer = user;
+				return this._dealer;
 				break;
 			}
 		}
@@ -194,7 +211,7 @@ Channel.prototype.newDealer = function(){
 		
 		// if dealer is last user, next will fail, and we want to select the first:
 		
-		this._dealerId = -1;
+		this._dealer = null;
 		return (this.newDealer());
 		
 	}

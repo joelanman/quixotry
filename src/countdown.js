@@ -88,14 +88,18 @@ var currentState = "";
 	
 var initRound = function(){
 	round = {
-		"validWords" : [],
+		"usersWithValidWords" : [],
 		"totalWordLength" : 0,
 		"letters" : "",
 		"consonants" : 0,
 		"vowels" : 0,
 		"maxConsonants" : 5,
 		"maxVowels" : 5,
-		"time" : -1
+		"time" : -1,
+		"leaderboards" : {
+			"round": [],
+			"overall" : []
+		}
 	};
 }
 
@@ -214,8 +218,8 @@ states.lobby = {
 		}
 												   					   
 		channels.active.broadcast(JSON.stringify({action: "state",
-												   state: "lobby",
-												   users: channels.active.users()}));
+												  state: "lobby",
+												  leaderboards: round.leaderboards}));
 		
 		var startGame = function(){
 	
@@ -251,10 +255,13 @@ states.chooseLetters = {
 		
 		quicklog("Starting game");
 		
+		var dealer = channels.active.newDealer();
+		
 		var msgOut = JSON.stringify({
 			"action": "state",
 			"state": "chooseLetters",
-			"dealerId": channels.active.newDealer()
+			"dealerId": dealer.id,
+			"dealerName": dealer.name()
 		});
 		
 		channels.active.broadcast(msgOut);
@@ -392,14 +399,14 @@ states.game = {
 		
 		user.word(word);
 		
-  		var validWord = (words.indexOf(word.toLowerCase()) != -1);
+  		var hasValidWord = (words.indexOf(word.toLowerCase()) != -1);
   		
-  		quicklog("Valid: " + validWord);
+  		quicklog("Valid: " + hasValidWord);
 		
-		user.validWord(validWord);
+		user.hasValidWord(hasValidWord);
 		
-		if (validWord){
-			round.validWords.push(user);
+		if (hasValidWord){
+			round.usersWithValidWords.push(user);
 			round.totalWordLength += word.length;
 		} else {
 			user.scoreChange(0);
@@ -440,6 +447,19 @@ states.submissions = {
 	
 }
 
+var compareScore = function(a,b){
+	
+	if (a.scoreChange() > b.scoreChange()){
+		return -1;
+	} else
+	if (a.scoreChange() < b.scoreChange()){
+		return 1;
+	} else {
+		return 0;
+	}
+	
+}
+
 states.endRound = {
 	
 	"_init" : function(){
@@ -450,8 +470,8 @@ states.endRound = {
 			
 		quicklog("Average word length: " + averageWordLength);
 		
-		for (i = 0; i < round.validWords.length; i++){
-			var user = round.validWords[i];
+		for (i = 0; i < round.usersWithValidWords.length; i++){
+			var user = round.usersWithValidWords[i];
 			var word = user.word();
 			if (word.length > averageWordLength) {
 				var scoreChange = Math.ceil(word.length-averageWordLength) * 10;
@@ -460,6 +480,10 @@ states.endRound = {
 				user.scoreChange(0);
 			}
 		}
+		
+		round.leaderboards.round = channels.active.usersToArray();
+		
+		round.leaderboards.round.sort(compareScore);
 		
 		changeState("lobby");
 	}

@@ -77,7 +77,7 @@ body{
 	display:		none;
 }
 
-#users{
+#leaderboards{
 	margin:			0 auto 20px auto;
 	text-align:		left;
 	width:			600px;
@@ -91,7 +91,7 @@ body{
 	color:			#777;
 }
 
-#users .col{
+#leaderboards .col{
 	display:		inline-block;
 	width:			100px;
 	margin:			5px 10px;

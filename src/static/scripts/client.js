@@ -19,6 +19,30 @@ var round = {
 
 var selfId = window.localStorage.getItem('userId');
 
+var drawLeaderboards = function(leaderboards){
+	$('#leaderboards .user').remove();
+	
+	var $roundLeaderboard = $('#leaderboards .round');
+	
+	var roundUsers = [];
+	
+	for (var i = 0; i < leaderboards.round.length; i++){
+		
+		var user = new User(leaderboards.round[i]);
+		
+		var $user = userManager.$userTemplate.clone();
+		
+		$user.find('.name').text(user.name());
+		$user.find('.word').text(user.word());
+		$user.find('.word').addClass(user.hasValidWord() ? "valid" : "invalid");
+		$user.find('.scoreChange').text(user.scoreChange());
+		
+		roundUsers.push($user[0]);
+	}
+	
+	$roundLeaderboard.append(roundUsers);
+}
+
 var changeState = function(state, message){
 	
 	// end the current state
@@ -27,7 +51,7 @@ var changeState = function(state, message){
 		try {
 			states[currentState]._end();
 		} catch (err){
-			log("End failed for state: " + currentState);
+			log("End failed for state: " + currentState + " : " + err);
 		}
 	}
 	
@@ -40,7 +64,7 @@ var changeState = function(state, message){
 		try {
 			states[state]._init(message);
 		} catch (err){
-			log("Init failed for state: "+state);
+			log("Init failed for state: " + state + " : " + err);
 		}
 		
 	} else {
@@ -96,8 +120,8 @@ states.common = {
 states.lobby = {
 	"_init" : function(message){
 		$('#lobby').show();
-		if (message.users){
-			userManager.updateUsers(message.users);
+		if (message.leaderboards){
+			drawLeaderboards(message.leaderboards);
 		}
 	},
 	
@@ -124,8 +148,7 @@ states.chooseLetters = {
 			$('#dealerTitle').text('Choose 8 letters for this round');
 		} else {
 			$('#tilePicker').hide();
-			var dealerName = userManager.get(message.dealerId).name();
-			$('#dealerTitle').text(dealerName + ' is picking letters...');
+			$('#dealerTitle').text(message.dealerName + ' is picking letters...');
 			
 			for (var letter in message.letters){
 				addTile(message.letters[letter]);

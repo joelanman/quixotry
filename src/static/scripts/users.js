@@ -50,13 +50,8 @@ userManager.get = function(id){
 userManager.init();
 
 User = function(user){
-		
-	this.$el = userManager.$userTemplate.clone();
-	this.$el.attr('id','user_'+ user.id);
 	
 	this.update(user);
-	
-	this.$el.appendTo($('#users'));
 };
 
 User.prototype.update = function(user){
@@ -64,11 +59,6 @@ User.prototype.update = function(user){
 	for (var property in user){
 		this[property] = user[property];
 	}
-	
-	this.$el.find('.name').text(this.name());
-	this.$el.find('.word').text(this.word());
-	this.$el.find('.scoreChange').text(this.scoreChange());
-	this.$el.find('.score').text(this.score());
 	
 	if (this.id === selfId)
 		$('#selfName').text(this.name());
@@ -117,4 +107,14 @@ User.prototype.word = function(word){
 		
 	return this;
 };
+
+User.prototype.hasValidWord = function(isValid){
+
+	if (isValid == null)
+		return this._hasValidWord;
+		
+	this._hasValidWord = isValid;
+		
+	return this;
+}
 
