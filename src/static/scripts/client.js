@@ -55,6 +55,8 @@ states.common = {
 	"initRoom" : function(message){
 		log("initialising room...");
 		
+		userManager.init();
+		
 		var users = message.users;
 		for (var userId in users)
 			userManager.addUser(users[userId]);
@@ -173,17 +175,22 @@ states.game = {
 	
 	"_end" : function(message){
 		$('#game').hide();
+		$('#input .tiles, #output .tiles').empty();
 	}
 };
 
 states.login = {
 	"_init" : function(message){
-		$('#login').show();
 		
+		$('#chat').hide();
+		userManager.removeAll();
+		
+		$('#login').show();
 		$('#frm_login').find('.name').focus();
 	},
 	
 	"_end" : function(message){
+		$('#message').hide().text("");
 		$('#login').hide();
 		$('#chat').show();
 	},

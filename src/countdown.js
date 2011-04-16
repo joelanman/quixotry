@@ -189,7 +189,6 @@ states.lobby = {
 		
 		var inactiveClients = channels.active.getInactive();
 		
-		
 		if (inactiveClients.length){
 			
 			var inactiveUserIds = [];
@@ -238,6 +237,8 @@ states.lobby = {
 	},
 	
 	"_end" : function(){
+		
+		channels.active.endRound();
 		
 		initRound();
 		
@@ -340,7 +341,7 @@ states.chooseLetters = {
 		
 		channels.active.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
 			
-		if (round.letters.length == 8) {
+		if (round.letters.length >= 8) {
 			
 			clearTimeout(dealerDeadTimeout);
 						
@@ -359,8 +360,8 @@ states.game = {
 		round.time = 30;
 		
 		channels.active.broadcast(JSON.stringify({'action': 	'state',
-										 'state': 	'game',
-										 'time': 	round.time}));
+												 'state': 	'game',
+												 'time': 	round.time}));
 		
 		var countdown = function(){
 			round.time = round.time - 1;

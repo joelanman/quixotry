@@ -225,6 +225,15 @@ Channel.prototype.setUserStatus = function(status){
 	
 }
 
+Channel.prototype.endRound = function(){
+	
+	for (id in this.clients) {
+		var user = this.clients[id].user;
+		user.scoreChange(0);
+		user.word("");
+	}
+}
+
 Channel.prototype.count = function(){
 	
 	var count = 0;

@@ -1,6 +1,9 @@
 var userManager = {
-	users: {}
 };
+
+userManager.init = function(){
+	this.users = {};
+}
 
 userManager.addUser = function(user){
 
@@ -14,7 +17,7 @@ userManager.removeUser = function(id){
 	
 	log("Removing user: " + id);
 	
-	$('#user_'+ id).fadeOut();
+	$('#user_'+ id).fadeOut(function(){$(this).remove()});
 	
 	delete this.users[id];
 };
@@ -23,6 +26,14 @@ userManager.removeUsers = function(ids){
 	
 	for (var i=0; i<ids.length; i++)
 		this.removeUser(ids[i]);
+		
+};
+
+userManager.removeAll = function(){
+	
+	for (var id in this.users){
+		this.removeUser(id);
+	}
 		
 };
 
@@ -35,6 +46,8 @@ userManager.updateUsers = function(users){
 userManager.get = function(id){
 	return this.users[id];
 };
+
+userManager.init();
 
 User = function(user){
 		
@@ -104,3 +117,4 @@ User.prototype.word = function(word){
 		
 	return this;
 };
+
