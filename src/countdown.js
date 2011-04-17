@@ -169,13 +169,16 @@ states.common = {
 		channels.login.remove(client);
 		channels.active.add(client);
 		
+		var dealer = channels.active.dealer();
+		
 		client.send(JSON.stringify({
-			"action":	"initRoom",
-			"state":	currentState,
-			"users":	channels.active.users(),
-			"dealerId": channels.active.dealer(),
-			"letters":	round.letters,
-			"time":		round.time
+			"action":		"initRoom",
+			"state":		currentState,
+			"users":		channels.active.users(),
+			"dealerId": 	dealer.id,
+			"dealerName": 	dealer.name,
+			"letters":		round.letters,
+			"time":			round.time
 		}));
 									  
 		channels.active.broadcast(JSON.stringify({"action":"addUser", "user":user}));
@@ -210,11 +213,12 @@ states.lobby = {
 			
 			}
 			
+			/*
 			channels.active.broadcast(JSON.stringify({
 				action: "closed",
 				users: inactiveUserIds
 			}));
-			
+			*/
 		}
 												   					   
 		channels.active.broadcast(JSON.stringify({action: "state",
@@ -559,8 +563,11 @@ socket.on('connection', function(client){
 	
 	channelManager.removeClient(client);
 	
-	channels.active.broadcast(JSON.stringify({"action":"closed", "users":[client.user.id]}));
+	if (client.user){
 		
+		//channels.active.broadcast(JSON.stringify({"action":"closed", "users":[client.user.id]}));
+	}
+	
   }) 
 });
 

@@ -98,6 +98,10 @@ body{
 	overflow:		hidden;
 }
 
+#leaderboards .word.invalid{
+	color:			#C00;
+}
+
 .template{
 	display:		none !important;
 }

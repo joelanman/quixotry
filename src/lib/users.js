@@ -159,7 +159,11 @@ Channel.prototype.usersToArray = function(){
 Channel.prototype.dealer = function(user){
 
 	if (user == null) {
-		return this._dealer;
+		if (this._dealer != null){
+			return this._dealer;
+		} else {
+			return this.newDealer();
+		}
 	}
 	
 	this._dealer = user;
