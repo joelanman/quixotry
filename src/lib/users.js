@@ -1,16 +1,23 @@
+Array.prototype.sum = function(){
+	for(var i=0,sum=0;i<this.length;sum+=this[i++]);
+	return sum;
+}
+
 var sys = require("sys");
 
+var maxPreviousScores = 5;
+
 User = function(id){
-	
-	this.id    		= id;
-	this._name 	   	= "";
-	this._status   	= "login";
-	this._isDealer 	= false;
-	this._score    	= 0;
-	this._scoreChange = 0;
-	this._word 	   	= "";
-	this._hasValidWord = false;
-	this._lastActive = new Date();
+	this.id    			= id;
+	this._name 	   		= "";
+	this._status   		= "login";
+	this._isDealer 		= false;
+	this._scoreChange 	= 0;
+	this._totalScore 	= 0;
+	this._word 	   		= "";
+	this._hasValidWord 	= false;
+	this._lastActive 	= new Date();
+	this.previousScores = [];
 };
 
 User.prototype.status = function(status){
@@ -24,27 +31,27 @@ User.prototype.status = function(status){
 	
 }
 
-
 User.prototype.scoreChange = function(scoreChange){
 
 	if (scoreChange == null)
 		return this._scoreChange;
 		
 	this._scoreChange = scoreChange;
-	this._score += scoreChange;
+	
+	while (this.previousScores.length >= maxPreviousScores){
+		this.previousScores.pop();
+	}
+	
+	this.previousScores.push(scoreChange);
 	
 	return this;
 	
 }
 
-User.prototype.score = function(score){
+User.prototype.totalScore = function(){
 
-	if (score == null)
-		return this._score;
-		
-	this._score = score;
-		
-	return this;
+	return this.previousScores.sum();
+	
 }
 
 User.prototype.name = function(name){
@@ -250,7 +257,6 @@ Channel.prototype.endRound = function(){
 	
 	for (id in this.clients) {
 		var user = this.clients[id].user;
-		user.scoreChange(0);
 		user.word("");
 	}
 }

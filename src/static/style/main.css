@@ -86,9 +86,25 @@ body{
 	padding:		10px;
 	border-radius:	10px;
 	color:			#333;
+	position:		relative;
 }
 
-#headings{
+#leaderboards .leaderboard{
+	position:		absolute;
+	top:			0;
+	left:			0;
+	width:			100%;
+}
+
+#leaderboards h2{
+	text-align:		center;
+}
+
+#leaderboards .self{
+	background:		#FFF;
+}
+
+.headings{
 	color:			#777;
 }
 

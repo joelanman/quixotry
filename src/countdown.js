@@ -461,7 +461,18 @@ var compareScore = function(a,b){
 	} else {
 		return 0;
 	}
+}
+
+var compareTotalScore = function(a,b){
 	
+	if (a.totalScore() > b.totalScore()){
+		return -1;
+	} else
+	if (a.totalScore() < b.totalScore()){
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 states.endRound = {
@@ -485,9 +496,13 @@ states.endRound = {
 			}
 		}
 		
-		round.leaderboards.round = channels.active.usersToArray();
+		var activeUserArray = channels.active.usersToArray();
+		
+		round.leaderboards.round   = activeUserArray;
+		round.leaderboards.overall = activeUserArray;
 		
 		round.leaderboards.round.sort(compareScore);
+		round.leaderboards.overall.sort(compareTotalScore);
 		
 		changeState("lobby");
 	}

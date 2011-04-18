@@ -51,18 +51,41 @@
 	<div id="lobby">
 		
 		<div id="leaderboards">
-			<ul class="round">
-				<li id="userTemplate" class="user template">
-					<span class="col name"></span>
-					<span class="col word"></span>
-					<span class="col scoreChange"></span>
-				</li>
-				<li id="headings">
-					<span class="col name">Name</span>
-					<span class="col word">Word</span>
-					<span class="col scoreChange">Score</span>
-				</li>
-			</ul>
+			
+			<div class="round leaderboard">
+				
+				<h2>Last Round:</h2>
+			
+				<ul class="users">
+					<li id="userTemplate" class="user template">
+						<span class="col name"></span>
+						<span class="col word"></span>
+						<span class="col score"></span>
+						<span class="col totalScore"></span>
+					</li>
+					<li class="headings">
+						<span class="col name">Name</span>
+						<span class="col word">Word</span>
+						<span class="col score">Score</span>
+						<span class="col totalScore">Last 5 Rounds</span>
+					</li>
+				</ul>
+			</div>
+			
+			<div class="overall leaderboard">
+				
+				<h2>Last 5 Rounds:</h2>
+				
+				<ul class="users">
+					<li class="headings">
+						<span class="col name">Name</span>
+						<span class="col word">Word</span>
+						<span class="col score">Score</span>
+						<span class="col totalScore">Last 5 Rounds</span>
+					</li>
+					
+				</ul>
+			</div>
 		</div>
 	
 	</div>

@@ -35,12 +35,40 @@ var drawLeaderboards = function(leaderboards){
 		$user.find('.name').text(user.name());
 		$user.find('.word').text(user.word());
 		$user.find('.word').addClass(user.hasValidWord() ? "valid" : "invalid");
-		$user.find('.scoreChange').text(user.scoreChange());
+		$user.find('.score').text(user.scoreChange());
+		$user.find('.totalScore').text(user.totalScore());
 		
+		if(user.id == selfId)
+			$user.addClass("self");
+			
 		roundUsers.push($user[0]);
 	}
 	
 	$roundLeaderboard.append(roundUsers);
+	
+	var $overallLeaderboard = $('#leaderboards .overall');
+	
+	var roundUsers = [];
+	
+	for (var i = 0; i < leaderboards.overall.length; i++){
+		
+		var user = new User(leaderboards.overall[i]);
+		
+		var $user = userManager.$userTemplate.clone();
+		
+		$user.find('.name').text(user.name());
+		$user.find('.word').text(user.word());
+		$user.find('.word').addClass(user.hasValidWord() ? "valid" : "invalid");
+		$user.find('.score').text(user.scoreChange());
+		$user.find('.totalScore').text(user.totalScore());
+		
+		if(user.id == selfId)
+			$user.addClass("self");
+			
+		roundUsers.push($user[0]);
+	}
+	
+	$overallLeaderboard.append(roundUsers);
 }
 
 var changeState = function(state, message){
@@ -123,6 +151,18 @@ states.lobby = {
 		if (message.leaderboards){
 			drawLeaderboards(message.leaderboards);
 		}
+		
+		$('#leaderboards .round').show();
+		$('#leaderboards').height($('#leaderboards .round').height());
+		$('#leaderboards .overall').hide();
+		
+		setTimeout(function(){
+			
+			$('#leaderboards .round').fadeOut();
+			$('#leaderboards .overall').fadeIn();
+		
+		}, 5 * 1000);
+		
 	},
 	
 	"_end" : function(message){
