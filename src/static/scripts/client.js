@@ -22,7 +22,7 @@ var selfId = window.localStorage.getItem('userId');
 var drawLeaderboards = function(leaderboards){
 	$('#leaderboards .user').remove();
 	
-	var $roundLeaderboard = $('#leaderboards .round');
+	var $roundLeaderboard = $('#leaderboards .round.leaderboard .users');
 	
 	var roundUsers = [];
 	
@@ -46,7 +46,7 @@ var drawLeaderboards = function(leaderboards){
 	
 	$roundLeaderboard.append(roundUsers);
 	
-	var $overallLeaderboard = $('#leaderboards .overall');
+	var $overallLeaderboard = $('#leaderboards .overall.leaderboard .users');
 	
 	var roundUsers = [];
 	
@@ -152,14 +152,21 @@ states.lobby = {
 			drawLeaderboards(message.leaderboards);
 		}
 		
-		$('#leaderboards .round').show();
-		$('#leaderboards').height($('#leaderboards .round').height());
-		$('#leaderboards .overall').hide();
+		$('.leaderboardHolder').height($('.leaderboard.overall').innerHeight());
+		
+		$('#leaderboards .tabs .overall').removeClass('active');
+		$('#leaderboards .tabs .round').addClass('active');
+		
+		$('#leaderboards .round.leaderboard').show();
+		$('#leaderboards .overall.leaderboard').hide();
 		
 		setTimeout(function(){
 			
-			$('#leaderboards .round').fadeOut();
-			$('#leaderboards .overall').fadeIn();
+			$('#leaderboards .tabs .round').removeClass("active");
+			$('#leaderboards .tabs .overall').addClass("active");
+			
+			$('#leaderboards .round.leaderboard').fadeOut();
+			$('#leaderboards .overall.leaderboard').fadeIn();
 		
 		}, 5 * 1000);
 		

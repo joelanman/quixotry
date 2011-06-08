@@ -1,3 +1,18 @@
+.clearfix {
+    display: inline-block;
+}
+.clearfix:after {
+    content: " ";
+    display: block;
+    height: 0;
+    clear: both;
+    overflow: hidden;
+    visibility: hidden;
+}
+.clearfix {
+    display: block;
+}
+
 .disabled{
 	opacity:		0.4;
 	/* test */
@@ -15,14 +30,24 @@
 	overflow:		hidden;
 }
 
-h1{
-	font-size:		30px;
+#logo{
 	color:			#FFF;
-	font-weight:	bold;
-	letter-spacing: -0.07em;
 	text-shadow:	0 0 2px #000;
 	-webkit-transform:	rotate(-3deg);
 	float:			left;
+}
+
+#logo h1{
+	font-size:		40px;
+	font-weight:	bold;
+	letter-spacing: -0.07em;
+	text-shadow:	0 0 2px #000;
+	margin:			0 0 5px 0;
+}
+
+#logo h3{
+	font-weight:	normal;
+	margin:			0 0 5px 0;
 }
 
 h2{
@@ -80,13 +105,17 @@ body{
 
 #leaderboards{
 	margin:			0 auto 20px auto;
-	text-align:		left;
 	width:			600px;
-	background:		#EEE;
-	padding:		10px;
-	border-radius:	10px;
-	color:			#333;
+}
+
+#leaderboards .leaderboardHolder{
 	position:		relative;
+	text-align:		left;
+	background:		rgba(255,255,255,0.9);
+	padding:		10px;
+	border-bottom-right-radius:	10px;
+	border-bottom-left-radius:		10px;
+	color:			#333;
 }
 
 #leaderboards .leaderboard{
@@ -96,8 +125,24 @@ body{
 	width:			100%;
 }
 
-#leaderboards h2{
+#leaderboards .tabs li{
 	text-align:		center;
+	width:			275px;
+	float:			left;
+	background:		rgba(255,255,255,0.6);
+	padding:		10px;
+	border-top-right-radius:	10px;
+	border-top-left-radius:		10px;
+	color:			#333;
+	margin-right:	10px;
+}
+
+#leaderboards .tabs li:last-child{
+	margin-right:	0;
+}
+
+#leaderboards .tabs li.active{
+	background:		rgba(255,255,255,0.9);
 }
 
 #leaderboards .self{
@@ -108,9 +153,13 @@ body{
 	color:			#777;
 }
 
+#leaderboards .leaderboard .users{
+	margin:			10px;
+}
+
 #leaderboards .col{
 	display:		inline-block;
-	width:			100px;
+	width:			110px;
 	margin:			5px 10px;
 	overflow:		hidden;
 }

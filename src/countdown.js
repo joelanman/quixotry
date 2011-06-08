@@ -22,7 +22,7 @@ function quicklog(s) {
 
 // set up dictionary and letters
 
-fs.readFile('wordlist.csv', 'utf8', function (err, data) {
+fs.readFile(__dirname + '/wordlist.csv', 'utf8', function (err, data) {
 	
   if (err) throw err;
   words = data.split('\n');
