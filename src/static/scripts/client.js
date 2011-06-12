@@ -1,6 +1,9 @@
+WEB_SOCKET_SWF_LOCATION = "/scripts/socket.io/lib/vendor/web-socket-js/WebSocketMain.swf";
+// Set this to dump debug message from Flash to console.log:
+WEB_SOCKET_DEBUG = true;
 
 var host = window.location.hostname;
-var socket = new io.Socket(host, {"reconnect": false});
+var socket = new io.Socket(host, {port:"8008", "reconnect": false});
 
 
 socket.on('disconnect', function(){
