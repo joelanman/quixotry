@@ -344,14 +344,18 @@ states.chooseLetters = {
 		
 		var letters = (msg.type == "vowel") ? vowels : consonants;
 		var index = Math.floor(Math.random()*letters.length);
-		var letter = letters.substring(index,index+1);
+		var letter = letters.substring(index, index+1);
 		
 		round.letters += letter;
 		
+		var index = round.letters.length - 1;
+		
 		quicklog("Add tile: " + letter);
 		
-		channels.active.broadcast(JSON.stringify({'action':'addTile', 'letter':letter}));
-			
+		channels.active.broadcast(JSON.stringify({'action':	'addTile',
+												  'letter':	letter,
+												  'index':	index}));
+		
 		if (round.letters.length >= 8) {
 			
 			clearTimeout(dealerDeadTimeout);
@@ -390,12 +394,17 @@ states.game = {
 		
 	},
 			
-	"submitWord" : function(client, msg){
+	"submitLetters" : function(client, msg){
+				
+		var word = "";
 		
-		quicklog(" submitted: " + msg.word);
+		for (var i=0; i < msg.letters.length; i++){
+			word += round.letters.charAt(msg.letters[i]);
+		}
 		
-		var user = client.user,
-			word = msg.word;
+		quicklog(" submitted: " + word);
+		
+		var user = client.user;
 			
 		if (word.length > 0){
 			user.lastActive(new Date());
@@ -447,7 +456,7 @@ states.submissions = {
 		
 	},
 
-	"submitWord" : states.game.submitWord
+	"submitLetters" : states.game.submitLetters
 	
 }
 

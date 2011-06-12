@@ -23,6 +23,7 @@ var round = {
 var selfId = window.localStorage.getItem('userId');
 
 var drawLeaderboards = function(leaderboards){
+	
 	$('#leaderboards .user').remove();
 	
 	var $roundLeaderboard = $('#leaderboards .round.leaderboard .users');
@@ -212,7 +213,7 @@ states.chooseLetters = {
 	
 	"addTile" : function(message){
 		log("Add tile: " + message.letter);
-		addTile(message.letter);
+		addTile(message.letter, message.index);
 	},
 	"dealerDead" : function(message){
 		
@@ -220,7 +221,7 @@ states.chooseLetters = {
 		
 		$('#tilePicker').hide();
 		for (var i=0; i<message.letters.length;i++){
-			addTile(message.letters.charAt(i));
+			addTile(message.letters.charAt(i), i);
 		}
 		
 	}
@@ -289,7 +290,7 @@ states.login = {
 	}
 };
 	
-var addTile = function(letter){
+var addTile = function(letter, index){
 	
 	var $newTile = $tile.clone();
 	
@@ -297,7 +298,8 @@ var addTile = function(letter){
 	
 	var a = $newTile.find('a');
 	a.text(letter)
-	 .css({'position':'relative', 'top':-80});
+	 .css({'position':'relative', 'top':-80})
+	 .data('index', index);
 	 
 	$newTile.appendTo('#input .tiles');
 	
@@ -333,8 +335,11 @@ incrementClock = function(){
 	if ($('#clock').text() == "0"){
 		clearInterval(clockInterval);
 		
-	  	var word = $.trim($('#output').text());
-		socket.send(JSON.stringify({'action':'submitWord', 'word' : word}));
+	  	var letters = [];
+		$('#output a').each(function(){
+			letters.push($(this).data('index'));
+		})
+		socket.send(JSON.stringify({'action':'submitLetters', 'letters' : letters}));
 		
 	}
 };
