@@ -169,6 +169,8 @@ states.common = {
 		channels.login.remove(client);
 		channels.active.add(client);
 		
+		quicklog('Total connections: ' + channels.active.count());
+		
 		var dealer = channels.active.dealer();
 		
 		client.send(JSON.stringify({
@@ -548,7 +550,7 @@ var changeState = function(state){
 // Handle WebSocket Requests
 socket.on('connection', function(client){ 
 	
-	quicklog('Client connected');
+	quicklog('Client connected.');
 	
 	channelManager.addClient(client);
 	
