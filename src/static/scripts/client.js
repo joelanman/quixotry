@@ -215,13 +215,18 @@ states.chooseLetters = {
 		log("Add tile: " + message.letter);
 		addTile(message.letter, message.index);
 	},
+	
 	"dealerDead" : function(message){
 		
 		log("Dealer's dead!");
 		
+		var index = message.startIndex,
+			letters = message.letters;
+		
 		$('#tilePicker').hide();
-		for (var i=0; i<message.letters.length;i++){
-			addTile(message.letters.charAt(i), i);
+		
+		for (var i = 0; i < letters.length; i++){
+			addTile(letters.charAt(i), index++);
 		}
 		
 	}

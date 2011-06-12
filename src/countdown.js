@@ -305,11 +305,14 @@ states.chooseLetters = {
 				
 			}
 			
+			var index = round.letters.length;
+			
 			round.letters += letters;
 			
 			var msgOut = JSON.stringify({
-				"action": "dealerDead",
-				"letters": letters
+				"action": 	  "dealerDead",
+				"letters": 	  letters,
+				"startIndex": index
 			});
 			
 			channels.active.broadcast(msgOut);
