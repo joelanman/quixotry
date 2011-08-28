@@ -73,7 +73,7 @@ var httpServer = http.createServer(function(request, response) {
 
 
 // socket.io 
-var socket = io.listen(httpServer); 
+var io = io.listen(httpServer); 
 
 var channelManager = new users.ChannelManager();
 var User = users.User;
@@ -548,7 +548,7 @@ var changeState = function(state){
 }
 
 // Handle WebSocket Requests
-socket.on('connection', function(client){ 
+io.sockets.on('connection', function(client){ 
 	
 	quicklog('Client connected.');
 	
