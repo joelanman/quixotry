@@ -6,7 +6,6 @@ var sys = require("sys"),
 	
     io = require('socket.io'),
 	users = require('./lib/users'),
-	channels = require('./lib/channels'),
 	crypto = require('crypto');
 
 function quicklog(s) {
@@ -157,6 +156,8 @@ states.common = {
 				}));
 				
 			} else { // user needs to log in
+			
+				// TODO user might still exist - check for user id and send state
 			
 				client.send(JSON.stringify({
 					"action": "state",

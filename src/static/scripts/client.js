@@ -1,5 +1,5 @@
 
-var socket = io.connect();
+var socket = io.connect('http://' + window.location.hostname + ':8008');
 
 
 socket.on('disconnect', function(){
@@ -238,8 +238,12 @@ states.game = {
 		
 		$('#dealerTitle').text('Find the longest word!');
 		
-		for (var letter in message.letters){
-			addTile(message.letters[letter]);
+		if(message.letters){
+			
+			for (var i = 0; i < message.letters.length; i++){
+				var letter = message.letters[i];
+				addTile(letter, i);
+			}
 		}
 		
 		if (message.time != -1){

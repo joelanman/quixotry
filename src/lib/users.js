@@ -116,7 +116,7 @@ var Channel = function(name){
 
 Channel.prototype.add = function(client){
 	
-	this.clients[client.sessionId] = client;
+	this.clients[client.id] = client;
 	
 	client.channels[this.name] = true;
 	
@@ -124,7 +124,7 @@ Channel.prototype.add = function(client){
 
 Channel.prototype.remove = function(client){
 	
-	delete this.clients[client.sessionId];
+	delete this.clients[client.id];
 	
 	delete client.channels[this.name];
 	
@@ -313,7 +313,7 @@ ChannelManager.prototype.addChannel = function(name){
 
 ChannelManager.prototype.addClient = function(client){
 
-	this.clients[client.sessionId] = client;
+	this.clients[client.id] = client;
 	
 	client.channels = {};
 
@@ -325,7 +325,7 @@ ChannelManager.prototype.removeClient = function(client){
 		this.channels[channel].remove(client);
 	}
 	
-	delete this.clients[client.sessionId];
+	delete this.clients[client.id];
 
 };
 
