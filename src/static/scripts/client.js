@@ -427,18 +427,20 @@ var documentReady = function(){
 
 	var $output = $('#output .tiles'),
 		$input = $('#input .tiles');
+		
+	var clickTrigger = (window.Touch) ? 'touchstart' : 'click';
 
-	$('.tiles a').live('click', function(e){
+	$('.tiles a').live(clickTrigger, function(e){
 		e.preventDefault();
 		var destination = ($(this).closest('#input').length) ? $output : $input;
 		$(this).closest('li').appendTo(destination);
 	});
 		
-	$('#tilePicker .vowel').click(function(e){
+	$('#tilePicker .vowel').live(clickTrigger, function(e){
 		pickTile('vowel');
 	});
 	
-	$('#tilePicker .consonant').click(function(e){
+	$('#tilePicker .consonant').live(clickTrigger, function(e){
 		pickTile('consonant');
 	});
 	

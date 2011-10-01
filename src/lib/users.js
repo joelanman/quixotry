@@ -287,7 +287,7 @@ Channel.prototype.getInactive = function(){
 		
 		sys.log("User inactive for: " + timeInactive/1000 + " secs");
 	
-		if (timeInactive > 30 * 1000) {
+		if (timeInactive > 60 * 1000) {
 			
 			sys.log("Inactive user: " + user.name());
 			inactiveClients.push(this.clients[id]);
