@@ -425,10 +425,13 @@ var documentReady = function(){
 		
 	});
 
+	var $output = $('#output .tiles'),
+		$input = $('#input .tiles');
+
 	$('.tiles a').live('click', function(e){
 		e.preventDefault();
-		var destination = ($(this).closest('#input').length) ? '#output' : '#input';
-		$(this).closest('li').appendTo(destination + ' .tiles');
+		var destination = ($(this).closest('#input').length) ? $output : $input;
+		$(this).closest('li').appendTo(destination);
 	});
 		
 	$('#tilePicker .vowel').click(function(e){
