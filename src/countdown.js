@@ -6,18 +6,10 @@ var sys = require("sys"),
 	
     io = require('socket.io'),
 	users = require('./lib/users'),
+	utils = require('./lib/utils'),
 	crypto = require('crypto');
-
-function quicklog(s) {
-	var logpath = "/tmp/node.log";
-	s = s.toString().replace(/\r\n|\r/g, '\n'); // hack
-	var fd = fs.openSync(logpath, 'a+', 0666);
-	var date = new Date();
-	s = '[' + date.toString() + '] ' + s;
-	sys.log(s);
-	fs.writeSync(fd, s + '\n');
-	fs.closeSync(fd);
-}
+	
+var quicklog = utils.quicklog;
 
 // set up dictionary and letters
 
@@ -264,14 +256,14 @@ states.chooseLetters = {
 		
 		var dealer = channels.active.newDealer();
 		
-		var msgOut = JSON.stringify({
+		var msg = JSON.stringify({
 			"action": "state",
 			"state": "chooseLetters",
 			"dealerId": dealer.id,
 			"dealerName": dealer.name()
 		});
 		
-		channels.active.broadcast(msgOut);
+		channels.active.broadcast(msg);
 		
 		dealerDead = function(){
 		
@@ -513,8 +505,8 @@ states.endRound = {
 		
 		var activeUserArray = channels.active.usersToArray();
 		
-		round.leaderboards.round   = activeUserArray;
-		round.leaderboards.overall = activeUserArray;
+		round.leaderboards.round   = activeUserArray.slice(0);
+		round.leaderboards.overall = activeUserArray.slice(0);
 		
 		round.leaderboards.round.sort(compareScore);
 		round.leaderboards.overall.sort(compareTotalScore);
