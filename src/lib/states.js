@@ -12,7 +12,7 @@ var files = fs.readdirSync(__dirname + '/states');
 
 files.forEach(function(filename){
 	var stateName = path.basename(filename, '.js');
-	states[stateName] = require('./states/' + stateName).state;
+	states[stateName] = require('./states/' + stateName).state(game);
 	quicklog('requiring state: '+stateName);
 });
 	

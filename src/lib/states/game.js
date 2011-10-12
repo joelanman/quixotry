@@ -1,70 +1,73 @@
 
 
-exports.state = {
+exports.state = function(game){
 	
-	"_init" :  function(){
-		
-		channels.active.setUserStatus("game");
-		
-		round.time = 30;
-		
-		channels.active.broadcast(JSON.stringify({'action': 	'state',
-												 'state': 	'game',
-												 'time': 	round.time}));
-		
-		var countdown = function(){
-			round.time = round.time - 1;
+	return {
+	
+		"_init" :  function(){
 			
-			quicklog("Time left: " + round.time);
+			game.channels.active.setUserStatus("game");
 			
-			if (round.time == 0){
-				clearInterval(countdownInterval);
+			game.round.time = 30;
+			
+			game.channels.active.broadcast(JSON.stringify({'action': 'state',
+													 	   'state':  'game',
+													 	   'time': 	  game.round.time}));
+			
+			var countdown = function(){
+				game.round.time = game.round.time - 1;
 				
-				changeState("submissions");
+				quicklog("Time left: " + game.round.time);
+				
+				if (game.round.time == 0){
+					clearInterval(countdownInterval);
+					
+					changeState("submissions");
+				}
 			}
-		}
-		
-		countdownInterval = setInterval(countdown, 1000);
-		
-	},
 			
-	"submitLetters" : function(client, msg){
+			countdownInterval = setInterval(countdown, 1000);
+			
+		},
 				
-		var word = "";
-		
-		for (var i=0; i < msg.letters.length; i++){
-			word += round.letters.charAt(msg.letters[i]);
-		}
-		
-		quicklog(" submitted: " + word);
-		
-		var user = client.user;
+		"submitLetters" : function(client, msg){
+					
+			var word = "";
 			
-		if (word.length > 0){
-			user.lastActive(new Date());
-		}
-		
-		user.word(word);
-		
-  		var hasValidWord = (words.indexOf(word.toLowerCase()) != -1);
-  		
-  		quicklog("Valid: " + hasValidWord);
-		
-		user.hasValidWord(hasValidWord);
-		
-		if (hasValidWord){
-			round.usersWithValidWords.push(user);
-			round.totalWordLength += word.length;
-		} else {
-			user.scoreChange(0);
-		}
-		
-		user.status("submittedWord");
-		
-		if (channels.active.checkUserStatus("submittedWord")) {
-						
-			changeState('endRound');
+			for (var i=0; i < msg.letters.length; i++){
+				word += game.round.letters.charAt(msg.letters[i]);
+			}
 			
+			quicklog(" submitted: " + word);
+			
+			var user = client.user;
+				
+			if (word.length > 0){
+				user.lastActive(new Date());
+			}
+			
+			user.word(word);
+			
+	  		var hasValidWord = (words.indexOf(word.toLowerCase()) != -1);
+	  		
+	  		quicklog("Valid: " + hasValidWord);
+			
+			user.hasValidWord(hasValidWord);
+			
+			if (hasValidWord){
+				game.round.usersWithValidWords.push(user);
+				game.round.totalWordLength += word.length;
+			} else {
+				user.scoreChange(0);
+			}
+			
+			user.status("submittedWord");
+			
+			if (game.channels.active.checkUserStatus("submittedWord")) {
+							
+				game.changeState('endRound');
+				
+			}
 		}
 	}
 }

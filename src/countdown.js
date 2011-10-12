@@ -12,18 +12,20 @@ var sys = require("sys"),
 	
 var quicklog = utils.quicklog;
 
+var game = {};
+
 // set up dictionary and letters
 
 fs.readFile(__dirname + '/wordlist.csv', 'utf8', function (err, data) {
 	
   if (err) throw err;
-  var words = data.split('\n');
-  quicklog("loaded dictionary, total words: " + words.length);
+  game.words = data.split('\n');
+  quicklog("loaded dictionary, total words: " + game.words.length);
   
 });
 
-var	vowels = "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU", // Scrabble distributions
-	consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
+game.vowels 	= "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU";
+game.consonants = "BBCCDDDDFFGGGHHJKLLLLMMNNNNNNPPQRRRRRRSSSSTTTTTTVVWWXYYZ";
 	
 // set up servers (to do: take out http server)
 
@@ -63,18 +65,14 @@ var httpServer = http.createServer(function(request, response) {
     });  
 })
 
-
-// socket.io 
-var io = io.listen(httpServer); 
-
 var channelManager = new users.ChannelManager();
 
 channelManager.addChannel("login");
 channelManager.addChannel("active");
 channelManager.addChannel("inactive");
 	
-var initRound = function(){
-	round = {
+game.initRound = function(){
+	this.round = {
 		"usersWithValidWords" : [],
 		"totalWordLength" : 0,
 		"letters" : "",
@@ -90,7 +88,11 @@ var initRound = function(){
 	};
 }
 
-initRound();
+game.initRound();
+
+
+// socket.io 
+var io = io.listen(httpServer); 
 
 // Handle WebSocket Requests
 io.sockets.on('connection', function(client){ 

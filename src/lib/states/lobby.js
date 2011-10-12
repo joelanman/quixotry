@@ -1,66 +1,69 @@
-exports.state = {
+exports.state = function(game){
 	
-	"_init" : function(){
-		
-		quicklog("states.lobby._init");
-		
-		// cull inactive users
-		
-		var inactiveClients = channels.active.getInactive();
-		
-		if (inactiveClients.length){
-			
-			var inactiveUserIds = [];
-			
-			for (var i = 0; i < inactiveClients.length; i++){
-							
-				var client = inactiveClients[i];
-			
-				channels.active.remove(client);
-				channels.inactive.add(client);
-				
-				client.send(JSON.stringify({'action':'timeout'}));
-				
-				inactiveUserIds.push(client.user.id);
-			
-			}
-			
-			/*
-			channels.active.broadcast(JSON.stringify({
-				action: "closed",
-				users: inactiveUserIds
-			}));
-			*/
-		}
-												   					   
-		channels.active.broadcast(JSON.stringify({action: "state",
-												  state: "lobby",
-												  leaderboards: round.leaderboards}));
-		
-		var startGame = function(){
+	return {
 	
-			if (channels.active.count() == 0) {
+		"_init" : function(){
+			
+			quicklog("states.lobby._init");
+			
+			// cull inactive users
+			
+			var inactiveClients = game.channels.active.getInactive();
+			
+			if (inactiveClients.length){
 				
-				sys.log("No players - waiting...");
+				var inactiveUserIds = [];
 				
-			} else {
+				for (var i = 0; i < inactiveClients.length; i++){
+								
+					var client = inactiveClients[i];
+				
+					game.channels.active.remove(client);
+					game.channels.inactive.add(client);
 					
-				clearInterval(startGameInterval);
-						
-				changeState('chooseLetters');
+					client.send(JSON.stringify({'action':'timeout'}));
+					
+					inactiveUserIds.push(client.user.id);
 				
+				}
+				
+				/*
+				channels.active.broadcast(JSON.stringify({
+					action: "closed",
+					users: inactiveUserIds
+				}));
+				*/
 			}
-		};
-				
-		startGameInterval = setInterval(startGame, 10000);
+													   					   
+			game.channels.active.broadcast(JSON.stringify({action: "state",
+														   state: "lobby",
+														   leaderboards: game.round.leaderboards}));
+			
+			var startGame = function(){
 		
-	},
-	
-	"_end" : function(){
+				if (game.channels.active.count() == 0) {
+					
+					sys.log("No players - waiting...");
+					
+				} else {
+						
+					clearInterval(startGameInterval);
+							
+					changeState('chooseLetters');
+					
+				}
+			};
+					
+			startGameInterval = setInterval(startGame, 10000);
+			
+		},
 		
-		channels.active.endRound();
-		
-		initRound();
-		
+		"_end" : function(){
+			
+			game.channels.active.endRound();
+			
+			game.initRound();
+			
+		}
 	}
 };
