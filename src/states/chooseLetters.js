@@ -92,7 +92,7 @@ exports.state = function(game){
 				game.round.consonants += 1;
 			}
 			
-			var letters = (msg.type == "vowel") ? vowels : consonants;
+			var letters = (msg.type == "vowel") ? game.vowels : game.consonants;
 			var index = Math.floor(Math.random()*letters.length);
 			var letter = letters.substring(index, index+1);
 			
