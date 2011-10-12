@@ -43,13 +43,13 @@ exports.state = function(game){
 		
 				if (game.channels.active.count() == 0) {
 					
-					sys.log("No players - waiting...");
+					quicklog("No players - waiting...");
 					
 				} else {
 						
 					clearInterval(startGameInterval);
 							
-					changeState('chooseLetters');
+					game.changeState('chooseLetters');
 					
 				}
 			};

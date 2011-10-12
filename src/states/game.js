@@ -22,7 +22,7 @@ exports.state = function(game){
 				if (game.round.time == 0){
 					clearInterval(countdownInterval);
 					
-					changeState("submissions");
+					game.changeState("submissions");
 				}
 			}
 			

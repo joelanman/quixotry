@@ -6,9 +6,7 @@ var sys = require("sys"),
 	
     io = require('socket.io'),
 	utils = require('./lib/utils'),
-	users = require('./lib/users'),
-	states = require('./lib/states'),
-	crypto = require('crypto');
+	users = require('./lib/users');
 	
 var quicklog = utils.quicklog;
 
@@ -65,11 +63,15 @@ var httpServer = http.createServer(function(request, response) {
     });  
 })
 
+// channels
+
 var channelManager = new users.ChannelManager();
 
 channelManager.addChannel("login");
 channelManager.addChannel("active");
 channelManager.addChannel("inactive");
+
+game.channels = channelManager.channels;
 	
 game.initRound = function(){
 	this.round = {
@@ -86,10 +88,68 @@ game.initRound = function(){
 			"overall" : []
 		}
 	};
-}
+};
 
 game.initRound();
 
+// states
+
+game.currentState = "";
+game.states = {};
+
+game.changeState = function(state){
+	
+	if (this.states[state]) {
+	
+		try {
+			this.states[this.currentState]._end();
+		} catch (err){
+			quicklog("End failed for state: " + this.currentState + ". " + err);
+		}
+		
+		this.currentState = state;
+		
+		try {
+			this.states[state]._init();
+		} catch (err){
+			quicklog("Init failed for state: " + state + ". " + err);
+		}
+		
+	} else {
+		// error - state not found
+		quicklog("State doesn't exist: " + state );
+	}
+	
+}
+
+game.request = function(msg){
+	
+	var action = msg.action;
+	var client = msg.client;
+	
+	if (this.states[this.currentState][action]){ // current state
+			
+		this.states[this.currentState][action](client, msg);
+		
+	} else if (this.states.common[action]){ // common events
+		
+		this.states.common[action](client, msg);
+		
+	} else {
+		client.send(JSON.stringify({
+			action: "error",
+			message: "The message you sent was not valid in the current state: " + this.currentState + " > " + msg.action
+		}));	
+	}
+}
+
+var files = fs.readdirSync(__dirname + '/states');
+
+files.forEach(function(filename){
+	var stateName = path.basename(filename, '.js');
+	game.states[stateName] = require('./states/' + stateName).state(game);
+	quicklog('requiring state: '+stateName);
+});
 
 // socket.io 
 var io = io.listen(httpServer); 
@@ -111,8 +171,10 @@ io.sockets.on('connection', function(client){
 			quicklog('Invalid JSON: ' + msg);
 			return;
 		}
+		
+		msgObj.client = client;
 				
-		states.request(msgObj);
+		game.request(msgObj);
 		
 	});
 	
@@ -134,4 +196,4 @@ io.sockets.on('connection', function(client){
 
 httpServer.listen(8008);
 
-states.changeState('lobby');
+game.changeState('lobby');

@@ -1,4 +1,56 @@
 exports.state = function(game){
+	
+	var dealerDead = function(){
+	
+		quicklog("Dealer dead!");
+		
+		clearTimeout(dealerDeadTimeout);
+		
+		var letters = "";
+		
+		var numLetters = 8 - game.round.letters.length;
+		
+		quicklog("Selected letters : " + game.round.letters);
+		
+		var numConsonants = 5 - game.round.consonants,
+			numVowels = 5 - game.round.vowels;
+		
+		if (numLetters < numConsonants) {
+			numConsonants = numLetters;
+		}
+		
+		for (var i = 0; i < numConsonants; i++) {
+		
+			var index = Math.floor(Math.random() * game.consonants.length);
+			letters += game.consonants.substring(index, index + 1);
+			
+		}
+		
+		numLetters = numLetters - numConsonants;
+		
+		for (var i = 0; i < numLetters; i++) {
+		
+			var index = Math.floor(Math.random() * game.vowels.length);
+			letters += game.vowels.substring(index, index + 1);
+			
+		}
+		
+		var index = game.round.letters.length;
+		
+		game.round.letters += letters;
+		
+		var msgOut = JSON.stringify({
+			"action": 	  "dealerDead",
+			"letters": 	  letters,
+			"startIndex": index
+		});
+		
+		game.channels.active.broadcast(msgOut);
+					
+		game.changeState("game");
+		
+	};
+			
 	return {
 		
 		"_init" : function(){
@@ -15,57 +67,6 @@ exports.state = function(game){
 			});
 			
 			game.channels.active.broadcast(msgOut);
-			
-			var dealerDead = function(){
-			
-				quicklog("Dealer dead!");
-				
-				clearTimeout(dealerDeadTimeout);
-				
-				var letters = "";
-				
-				var numLetters = 8 - game.round.letters.length;
-				
-				quicklog("Selected letters : " + game.round.letters);
-				
-				var numConsonants = 5 - game.round.consonants,
-					numVowels = 5 - game.round.vowels;
-				
-				if (numLetters < numConsonants) {
-					numConsonants = numLetters;
-				}
-				
-				for (var i = 0; i < numConsonants; i++) {
-				
-					var index = Math.floor(Math.random() * consonants.length);
-					letters += consonants.substring(index, index + 1);
-					
-				}
-				
-				numLetters = numLetters - numConsonants;
-				
-				for (var i = 0; i < numLetters; i++) {
-				
-					var index = Math.floor(Math.random() * vowels.length);
-					letters += vowels.substring(index, index + 1);
-					
-				}
-				
-				var index = round.letters.length;
-				
-				game.round.letters += letters;
-				
-				var msgOut = JSON.stringify({
-					"action": 	  "dealerDead",
-					"letters": 	  letters,
-					"startIndex": index
-				});
-				
-				game.channels.active.broadcast(msgOut);
-							
-				game.changeState("game");
-				
-			};
 			
 			dealerDeadTimeout = setTimeout(dealerDead, 8 * 1000);
 		},
