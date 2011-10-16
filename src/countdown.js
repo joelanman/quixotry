@@ -31,9 +31,9 @@ var httpServer = http.createServer(function(request, response) {
 
     var uri = url.parse(request.url).pathname; 
 	
-	uri = (uri == "" || uri == "/") ? "index.html" : uri;
+	uri = (uri == "" || uri == "/") ? "/static/index.html" : uri;
 	
-    var filename = path.join(__dirname, '/static/' + uri);  
+    var filename = path.join(__dirname, uri);  
 	
     path.exists(filename, function(exists) {  
         if(!exists) {  

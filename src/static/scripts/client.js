@@ -253,8 +253,7 @@ states.game = {
 	},
 	
 	"_end" : function(message){
-		$('#game').hide();
-		$('#input .tiles, #output .tiles').empty();
+		clearInterval(clockInterval);
 	}
 };
 
@@ -293,6 +292,25 @@ states.login = {
 		selfId = message.userId;
 		window.localStorage.setItem('userId', message.userId);
 	}
+};
+
+states.submissions = {
+
+	"_init": function(){
+	
+		$('#dealerTitle').text('Collecting words...');
+		
+	  	var letters = [];
+		$('#output a').each(function(){
+			letters.push($(this).data('index'));
+		})
+		socket.send(JSON.stringify({'action':'submitLetters', 'letters' : letters}));
+	},
+	"_end": function(){
+		$('#game').hide();
+		$('#input .tiles, #output .tiles').empty();
+	}
+
 };
 	
 var addTile = function(letter, index){
@@ -337,20 +355,13 @@ var pickTile = function(type){
 	
 incrementClock = function(){
 	$('#clock').text(parseInt($('#clock').text()) -1); 
-	if ($('#clock').text() == "0"){
+	if ($('#clock').text() <= "0"){
 		clearInterval(clockInterval);
-		
-	  	var letters = [];
-		$('#output a').each(function(){
-			letters.push($(this).data('index'));
-		})
-		socket.send(JSON.stringify({'action':'submitLetters', 'letters' : letters}));
-		
 	}
 };
 
 function log(data){
-  console.log(data);
+	console.log(data);
 }
 
 socket.on('message', function(data){
