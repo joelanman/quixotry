@@ -311,11 +311,16 @@ ChannelManager.prototype.addChannel = function(name){
 	
 };
 
-ChannelManager.prototype.addClient = function(client){
+ChannelManager.prototype.addClient = function(client, channel){
 
 	this.clients[client.id] = client;
 	
 	client.channels = {};
+	
+	if (channel) {
+		if(this.channels[channel])
+			this.channels[channel].add(client);
+	}
 
 };
 
