@@ -8,7 +8,7 @@ var sys = require("sys"),
 	utils = require('./lib/utils'),
 	users = require('./lib/users');
 	
-var quicklog = utils.quicklog;
+quicklog = utils.quicklog;
 
 var game = {};
 

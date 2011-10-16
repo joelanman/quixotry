@@ -74,7 +74,7 @@ exports.state = function(game){
 				"state":		game.currentState,
 				"users":		game.channels.active.users(),
 				"dealerId": 	dealer.id,
-				"dealerName": 	dealer.name,
+				"dealerName": 	dealer.name(),
 				"letters":		game.round.letters,
 				"time":			game.round.time
 			}));

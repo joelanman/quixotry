@@ -197,8 +197,9 @@ states.chooseLetters = {
 			$('#tilePicker').hide();
 			$('#dealerTitle').text(message.dealerName + ' is picking letters...');
 			
-			for (var letter in message.letters){
-				addTile(message.letters[letter]);
+			for (var i = 0; i < message.letters.length; i++){
+				var letter = message.letters[i];
+				addTile(letter, i);
 			}
 		}
 	},
