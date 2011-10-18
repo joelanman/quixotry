@@ -34,10 +34,13 @@ exports.state = function(game){
 				}));
 				*/
 			}
+			
+			var round = game.round;
 													   					   
 			game.channels.active.broadcast(JSON.stringify({action: "state",
 														   state: "lobby",
-														   leaderboards: game.round.leaderboards}));
+														   leaderboards: round.leaderboards,
+														   longestWord: round.longestWord.toUpperCase()}));
 			
 			var startGame = function(){
 		

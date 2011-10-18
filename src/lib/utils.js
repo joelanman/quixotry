@@ -1,7 +1,7 @@
 var sys = require("sys"),
 	fs = require("fs");
 
-quicklog = function (s) {
+var quicklog = function (s) {
 	var logpath = "/tmp/node.log";
 	s = s.toString().replace(/\r\n|\r/g, '\n'); // hack
 	var fd = fs.openSync(logpath, 'a+', 0666);

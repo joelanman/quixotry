@@ -148,6 +148,12 @@ states.common = {
 states.lobby = {
 	"_init" : function(message){
 		$('#lobby').show();
+		
+		if (message.longestWord){
+			$('#longestWord').text(message.longestWord);
+			$('#longestWord').attr('href', 'http://en.wiktionary.org/wiki/'+ message.longestWord.toLowerCase());
+		}
+		
 		if (message.leaderboards){
 			drawLeaderboards(message.leaderboards);
 		}
