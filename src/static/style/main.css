@@ -109,6 +109,10 @@ body{
 	display:		none;
 }
 
+#longestWordTitle{
+	margin:			0 0 20px 0;
+}
+
 #leaderboards{
 	margin:			0 auto 20px auto;
 	width:			600px;

@@ -20,6 +20,20 @@ fs.readFile(__dirname + '/wordlist.csv', 'utf8', function (err, data) {
   game.words = data.split('\n');
   quicklog("loaded dictionary, total words: " + game.words.length);
   
+  var anagramList = {};
+  
+  for (var i =0; i<game.words.length; i++){
+  	var word = game.words[i];
+  	var alphaWord = word.split("").sort().join("");
+  	if (anagramList[alphaWord]){
+  		anagramList[alphaWord].push(word);
+  	} else {
+  		anagramList[alphaWord] = [word];
+  	}
+  }
+  
+  game.anagramList = anagramList;
+  
 });
 
 game.vowels 	= "AAAAAAAAAEEEEEEEEEEEEIIIIIIIIIOOOOOOOOUUUU";
@@ -75,6 +89,7 @@ game.channels = channelManager.channels;
 	
 game.initRound = function(){
 	this.round = {
+		"longestWord" : "",
 		"usersWithValidWords" : [],
 		"totalWordLength" : 0,
 		"letters" : "",
