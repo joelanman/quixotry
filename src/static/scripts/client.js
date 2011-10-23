@@ -316,6 +316,7 @@ states.submissions = {
 	"_end": function(){
 		$('#game').hide();
 		$('#input .tiles, #output .tiles').empty();
+		$('#clock').text("");
 	}
 
 };
@@ -368,7 +369,9 @@ incrementClock = function(){
 };
 
 function log(data){
-	console.log(data);
+	if(typeof(log) != "undefined"){
+		console.log(data);
+	}
 }
 
 socket.on('message', function(data){

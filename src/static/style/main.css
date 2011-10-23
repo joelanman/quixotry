@@ -36,6 +36,10 @@ footer{
 	text-align:		center;
 }
 
+footer li{
+	margin: 		10px 0;
+}
+
 #logo{
 	color:			#FFF;
 	text-shadow:	0 0 2px #000;
