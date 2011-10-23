@@ -257,9 +257,32 @@ states.game = {
 			$('#clock').text(message.time);
 			clockInterval = setInterval("incrementClock()", 1000);
 		}		
+		
+		$(document).bind("keyup.selectLetters", function(e){
+			
+			if (e.which == 8){
+				$('#output li:last').appendTo('#input .tiles');
+				return;
+			}
+			
+			var letter = String.fromCharCode(e.which).toUpperCase();
+			
+			var input = $.trim($('#input').text());
+			
+			var index = input.indexOf(letter);
+			
+			if (index == -1){
+				return;
+			};
+			
+			$('#input li').eq(index).appendTo('#output .tiles');
+			
+		});
+		
 	},
 	
 	"_end" : function(message){
+		$(document).unbind("keyup.selectLetters");
 		clearInterval(clockInterval);
 	}
 };
