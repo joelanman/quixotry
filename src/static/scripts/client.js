@@ -260,15 +260,17 @@ states.game = {
 		
 		$(document).bind("keyup.selectLetters", function(e){
 			
+			// delete
+			
 			if (e.which == 8){
 				$('#output li:last').appendTo('#input .tiles');
 				return;
 			}
 			
+			// try to find letter
+			
 			var letter = String.fromCharCode(e.which).toUpperCase();
-			
 			var input = $.trim($('#input').text());
-			
 			var index = input.indexOf(letter);
 			
 			if (index == -1){
