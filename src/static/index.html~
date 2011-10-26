@@ -135,13 +135,13 @@
 			
 		</div>
 
-		<div id="input" class="clearfix">
+		<div id="input">
 			<ul class="tiles">
 				<li class="template" id="tileTemplate"><a href="#"></a></li>
 			</ul>
 			<a id="shuffleLetters" href="#">shuffle</a>
 		</div>
-		<div id="output" class="clearfix">
+		<div id="output">
 			<ul class="tiles"></ul>
 			<a id="clearLetters" href="#">clear</a>
 		</div>
