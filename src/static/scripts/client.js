@@ -114,6 +114,8 @@ states.common = {
 		for (var userId in users)
 			userManager.addUser(users[userId]);
 			
+		$('#numPlayers').text(userManager.count());
+			
 		var selfUser = userManager.get(selfId);
 		$('#selfName').text(selfUser.name());
 		
@@ -123,6 +125,7 @@ states.common = {
 	"addUser" : function(message){
 		log("User joined room");
 		userManager.addUser(message.user);
+		$('#numPlayers').text(userManager.count());
 	},
 	"changeName" : function(message){
 		log("User changed name to " + message.name);
@@ -132,6 +135,7 @@ states.common = {
 	"closed" : function(message){
 		log("Users left room");
 		userManager.removeUsers(message.users);
+		$('#numPlayers').text(userManager.count());
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);
@@ -389,7 +393,7 @@ states.game = {
 states.login = {
 	"_init" : function(message){
 		
-		$('#chat').hide();
+		$('#menu').hide();
 		userManager.removeAll();
 		
 		$('#login').show();
@@ -399,7 +403,7 @@ states.login = {
 	"_end" : function(message){
 		$('#message').hide().text("");
 		$('#login').hide();
-		$('#chat').show();
+		$('#menu').show();
 	},
 	
 	"initRoom" : function(message){

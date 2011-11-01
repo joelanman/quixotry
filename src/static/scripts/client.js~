@@ -114,6 +114,8 @@ states.common = {
 		for (var userId in users)
 			userManager.addUser(users[userId]);
 			
+		$('#numPlayers').text(userManager.count());
+			
 		var selfUser = userManager.get(selfId);
 		$('#selfName').text(selfUser.name());
 		
@@ -123,6 +125,7 @@ states.common = {
 	"addUser" : function(message){
 		log("User joined room");
 		userManager.addUser(message.user);
+		$('#numPlayers').text(userManager.count());
 	},
 	"changeName" : function(message){
 		log("User changed name to " + message.name);
@@ -132,6 +135,7 @@ states.common = {
 	"closed" : function(message){
 		log("Users left room");
 		userManager.removeUsers(message.users);
+		$('#numPlayers').text(userManager.count());
 	},
 	"state" : function(message){
 		log("Game state: " + message.state);
@@ -367,11 +371,21 @@ states.game = {
 			
 		});
 		
+		
+		$('#game').delegate("#clearLetters", "click.clearLetters", function(e){
+		
+			e.preventDefault();
+		
+			$('#output .tiles li').appendTo($('#input .tiles'));
+		
+		});
+		
 	},
 	
 	"_end" : function(message){
 		$(document).unbind("keyup.selectLetters");
 		$('#game').undelegate("#shuffleLetters", "click.shuffleLetters");
+		$('#game').undelegate("#clearLetters", "click.clearLetters");
 		clearInterval(clockInterval);
 	}
 };

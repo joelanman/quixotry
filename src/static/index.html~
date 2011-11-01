@@ -43,7 +43,8 @@
 			<h3>The Great Big Word Game</h3>
 		</div>
 		
-		<div id="chat">
+		<div id="menu">
+		
 			<div id="displaySelfName">
 				<span id="selfName"></span>
 				<a href="#" id="btn_changeName">change</a>
@@ -54,6 +55,11 @@
 					<a href="#" id="btn_saveChangeName">ok</a>
 				</form>
 			</div>
+		
+			<div id="playersOnline">
+				<span id="numPlayers"></span>
+			</div>
+			
 		</div>
 	
 	</div>
@@ -135,13 +141,13 @@
 			
 		</div>
 
-		<div id="input">
+		<div id="input" class="clearfix">
 			<ul class="tiles">
 				<li class="template" id="tileTemplate"><a href="#"></a></li>
 			</ul>
 			<a id="shuffleLetters" href="#">shuffle</a>
 		</div>
-		<div id="output">
+		<div id="output" class="clearfix">
 			<ul class="tiles"></ul>
 			<a id="clearLetters" href="#">clear</a>
 		</div>
@@ -150,6 +156,9 @@
 	<footer>
 		<ul>
 			<li> 
+				<a href="https://twitter.com/intent/tweet?text=Play%20Quixotry%20-%20the%20great%20big%20word%20game%20-%20with%20me%3A%20&url=http%3A%2F%2Fplayquixotry.com" target="_blank">Invite friends to play</a>
+			</li>
+			<li>	
 				<a href="mailto:joelanman@gmail.com">Send feedback</a>
 			</li>
 			<li>

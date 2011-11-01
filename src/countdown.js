@@ -202,7 +202,7 @@ io.sockets.on('connection', function(client){
 	
 	if (client.user){
 		
-		//channels.active.broadcast(JSON.stringify({"action":"closed", "users":[client.user.id]}));
+		game.channels.active.broadcast(JSON.stringify({"action":"closed", "users":[client.user.id]}));
 	}
 	
   }) 

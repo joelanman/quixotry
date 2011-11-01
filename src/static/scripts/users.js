@@ -11,6 +11,18 @@ userManager.init = function(){
 	this.users = {};
 }
 
+userManager.count = function(){
+	
+	var count = 0;
+	
+	for (userId in this.users) {
+		count++;
+	}
+	
+	return count;
+}
+
+
 userManager.addUser = function(user){
 
 	log("Adding user: " + user.id);

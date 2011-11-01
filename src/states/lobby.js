@@ -27,12 +27,10 @@ exports.state = function(game){
 				
 				}
 				
-				/*
-				channels.active.broadcast(JSON.stringify({
+				game.channels.active.broadcast(JSON.stringify({
 					action: "closed",
 					users: inactiveUserIds
 				}));
-				*/
 			}
 			
 			var round = game.round;
