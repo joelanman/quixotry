@@ -167,7 +167,10 @@ files.forEach(function(filename){
 });
 
 // socket.io 
-var io = io.listen(httpServer); 
+var io = io.listen(httpServer);
+io.enable('browser client minification');
+io.enable('browser client etag');
+io.enable('browser client gzip');
 
 // Handle WebSocket Requests
 io.sockets.on('connection', function(client){ 
