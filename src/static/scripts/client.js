@@ -529,6 +529,11 @@ socket.on('message', function(data){
 });
 	
 var documentReady = function(){
+
+	// prevent dragging on mobile
+	$('body').bind('touchmove', function(e) {
+		e.preventDefault();
+	});
 	
 	$tile = $('#tileTemplate').remove().removeAttr('id').removeClass('template').show();
 
