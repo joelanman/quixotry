@@ -15,7 +15,11 @@
 	<link href='/static/style/main.css' type='text/css' rel='stylesheet'>
 	
 	<script>
-	
+		// prevent dragging on mobile
+		document.body.addEventListener('touchmove', function(e) {
+			e.preventDefault();
+		});
+		
 		$(document).ready(documentReady);
 	
 	</script>
